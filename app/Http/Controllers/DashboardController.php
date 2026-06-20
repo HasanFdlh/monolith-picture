@@ -12,25 +12,15 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $booths = Booth::all();
-
-        $totalBooth = Booth::count();
-        $totalSession = Session::count();
-        $totalMedia = Media::count();
-        $totalShare = Share::count();
-
-        $latestSessions = Session::with('booth')
+        $sessions = Session::with(['booth', 'media'])
             ->latest()
-            ->take(6)
-            ->get();
+            ->get()
+            ->map(function ($session) {
+                $session->total_files = $session->media->count();
+                $session->total_size = $session->media->sum('size');
+                return $session;
+            });
 
-        return view('dashboard.index', compact(
-            'booths',
-            'totalBooth',
-            'totalSession',
-            'totalMedia',
-            'totalShare',
-            'latestSessions'
-        ));
+        return view('dashboard.index', compact('sessions'));
     }
 }

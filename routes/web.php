@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/sessions/{id}', [SessionController::class, 'show'])->name('sessions.show');
+    Route::get('/sessions/{id}/download', [SessionController::class, 'download'])->name('sessions.download');
 
     Route::middleware(['permission:users.view'])->group(function () {
         Route::get('/users', [UserController::class, 'index']);

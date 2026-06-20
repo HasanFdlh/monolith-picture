@@ -93,14 +93,40 @@ body{
     align-items:center;
 }
 
-.session-card{
-    border:none;
-    border-radius:18px;
-    overflow:hidden;
-    margin-bottom:25px;
+.session-card {
+    border: none;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 25px;
+    height: 100%;
 }
 
-.session-card img{
-    height:220px;
-    object-fit:cover;
+.session-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+}
+
+.session-card img {
+    transition: transform .3s ease;
+}
+
+.session-card:hover img {
+    transform: scale(1.05);
+}
+
+.session-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+}
+
+.session-card {
+    border-radius: 18px;
+    overflow: hidden;
+}
+
+.session-card .card-body {
+    display: flex;
+    flex-direction: column;
 }

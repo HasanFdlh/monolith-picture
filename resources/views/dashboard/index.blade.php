@@ -4,96 +4,72 @@
 
 @section('content')
 
-<div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
-
-        <div class="row g-3">
-
-            <div class="col-md-4">
-                <label class="form-label">Booth</label>
-                <select class="form-select">
-                    <option value="">All Booths</option>
-                    @foreach($booths as $booth)
-                        <option value="{{ $booth->id }}">
-                            {{ $booth->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-control">
-            </div>
-
-        </div>
-
-    </div>
-</div>
-
-{{-- STAT CARD --}}
 <div class="row mt-4">
 
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-4 p-3">
-            <h6>Total Booth</h6>
-            <h3>{{ $totalBooth }}</h3>
-        </div>
-    </div>
+@forelse($sessions as $session)
 
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-4 p-3">
-            <h6>Total Session</h6>
-            <h3>{{ $totalSession }}</h3>
-        </div>
-    </div>
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
 
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-4 p-3">
-            <h6>Total Media</h6>
-            <h3>{{ $totalMedia }}</h3>
-        </div>
-    </div>
+        <div class="card shadow-sm border-0 rounded-4 session-card h-100">
 
-    <div class="col-md-3">
-        <div class="card shadow-sm border-0 rounded-4 p-3">
-            <h6>Total Share</h6>
-            <h3>{{ $totalShare }}</h3>
-        </div>
-    </div>
+            {{-- PREVIEW IMAGE --}}
+            <img
+                src="{{ optional($session->media->first())->path ?? 'https://placehold.co/600x400' }}"
+                class="card-img-top session-img"
+            />
 
-</div>
+            <div class="card-body d-flex flex-column">
 
-{{-- SESSION LIST --}}
-<div class="row mt-4">
-
-    @forelse($latestSessions as $session)
-
-    <div class="col-lg-4 col-md-6 mb-3">
-
-        <div class="card session-card shadow-sm border-0">
-
-            <img src="https://placehold.co/600x350" class="card-img-top">
-
-            <div class="card-body">
-
-                <h5>
+                {{-- BOOTH NAME --}}
+                <h5 class="mb-1">
                     {{ $session->booth->name ?? 'No Booth' }}
                 </h5>
 
-                <p class="text-muted mb-1">
-                    Session: {{ $session->id }}
-                </p>
-
-                <small class="text-muted">
-                    {{ $session->created_at->format('d M Y') }}
+                {{-- SESSION DATE --}}
+                <small class="text-muted d-block">
+                    {{ optional($session->created_at)->format('d M Y H:i') }}
                 </small>
 
-                <div class="mt-3 d-flex gap-2">
+                {{-- SESSION CODE --}}
+                <small class="text-muted d-block">
+                    {{ $session->session_code ?? '-' }}
+                </small>
 
-                    <button class="btn btn-success btn-sm">Download</button>
-                    <button class="btn btn-primary btn-sm">Share</button>
-                    <button class="btn btn-danger btn-sm">Delete</button>
+                <hr>
+
+                {{-- STATS --}}
+                <div class="d-flex justify-content-between">
+
+                    <div>
+                        <small class="text-muted">Photos</small>
+                        <div>
+                            <strong>{{ $session->total_files ?? 0 }}</strong>
+                        </div>
+                    </div>
+
+                    <div>
+                        <small class="text-muted">Size</small>
+                        <div>
+                            <strong>
+                                {{ number_format(($session->total_size ?? 0) / 1024, 2) }} KB
+                            </strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- ACTION --}}
+                <div class="mt-auto d-flex gap-2">
+
+                    <a href="{{ route('sessions.show', $session->id) }}"
+                       class="btn btn-primary btn-sm w-50">
+                        Detail
+                    </a>
+
+                    <a href="{{ route('sessions.download', $session->id) }}"
+                       class="btn btn-success btn-sm w-50">
+                        Download ZIP
+                    </a>
 
                 </div>
 
@@ -103,13 +79,13 @@
 
     </div>
 
-    @empty
+@empty
 
     <div class="col-12 text-center text-muted">
-        No session data
+        No sessions found
     </div>
 
-    @endforelse
+@endforelse
 
 </div>
 
