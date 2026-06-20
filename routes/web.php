@@ -30,6 +30,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/sessions/{id}', [SessionController::class, 'show'])->name('sessions.show');
     Route::get('/sessions/{id}/download', [SessionController::class, 'download'])->name('sessions.download');
+    Route::delete('/sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
+
 
     Route::middleware(['permission:users.view'])->group(function () {
         Route::get('/users', [UserController::class, 'index']);

@@ -45,7 +45,7 @@
 
             <div class="gallery-item">
 
-                <img src="{{ $media->path }}" class="img-fluid rounded shadow-sm">
+                <img src="{{ asset($media->path) }}" class="img-fluid rounded shadow-sm">
 
             </div>
 
