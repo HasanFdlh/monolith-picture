@@ -2,79 +2,24 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <title>{{ config('app.name') }}</title>
-
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <style>
-    body {
-      background: #f5f6fa;
-    }
-
-    .sidebar {
-      width: 240px;
-      height: 100vh;
-      position: fixed;
-      background: #111827;
-      color: white;
-    }
-
-    .sidebar a {
-      color: #cbd5e1;
-      text-decoration: none;
-      display: block;
-      padding: 10px 15px;
-    }
-
-    .sidebar a:hover {
-      background: #1f2937;
-      color: white;
-    }
-
-    .content {
-      margin-left: 240px;
-      padding: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Photo Booth Dashboard')</title> <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
 
 <body>
-
-  <div class="sidebar">
-    <h5 class="p-3">{{ config('app.name') }}</h5>
-
-    <a href="/dashboard">Dashboard</a>
-
-    {{-- hanya admin --}}
-    @if (auth()->user()->hasRole('Admin'))
-      <a href="/users">Users</a>
-    @endif
-
-    <hr>
-
-    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-      Logout
-    </a>
-
-    <form id="logout-form" action="/logout" method="POST" style="display:none;">
-      @csrf
-    </form>
-  </div>
-
-  <div class="content">
-    @yield('content')
-  </div>
-
-  <!-- ⚠️ IMPORTANT: Bootstrap JS harus di bawah -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- OPTIONAL: stack scripts dari view -->
-  @yield('scripts')
-
+    <div class="wrapper"> @include('partials.sidebar') <div class="main"> @include('partials.navbar') <main
+                class="content"> @yield('content') </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
