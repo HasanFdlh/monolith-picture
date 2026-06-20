@@ -85,7 +85,7 @@ APP_URL=http://127.0.0.1:8000
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=monolith_rbac
+DB_DATABASE=monolith
 DB_USERNAME=root
 DB_PASSWORD=
 
@@ -114,13 +114,6 @@ Generate Role & Permission
 php artisan db:seed
 ```
 
-atau
-
-```bash
-php artisan db:seed --class=RolePermissionSeeder
-php artisan db:seed --class=AdminUserSeeder
-```
-
 ---
 
 # Default Account
@@ -144,16 +137,24 @@ app
 │   ├── Controllers
 │   │   ├── AuthController
 │   │   └── UserController
+│   │   └── DashboardController
+│   │   └── SessionController
 │   └── Middleware
 │
 ├── Models
+│   └── Booth.php
+│   └── Media.php
+│   └── Session.php
+│   └── Share.php
 │   └── User.php
 │
 database
 ├── migrations
 ├── seeders
-│   ├── RolePermissionSeeder.php
-│   └── AdminUserSeeder.php
+│   ├── AdminUserSeeder.php
+│   └── RolePermissionSeeder.php
+│   └── RoleSeeder.php
+│   └── SessionSeeder.php
 │
 resources
 └── views
