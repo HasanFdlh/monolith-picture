@@ -5,15 +5,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Booth;
 use App\Models\Session;
-use App\Models\Media;
-use App\Models\Share;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Session::with(['booth', 'media']);
+        $query = Session::with(['booth', 'media'])
+            ->withCount('media')
+            ->withSum('media', 'size')
+            ->latest();
 
         // Filter Booth
         if ($request->filled('booth_id')) {
@@ -43,9 +44,15 @@ class DashboardController extends Controller
         $limit = $request->input('limit', 10);
 
         $sessions = $query
-            ->latest()
             ->paginate($limit)
             ->withQueryString();
+
+        $sessions->getCollection()->transform(function ($session) {
+            $session->total_files = $session->media->count();
+            $session->total_size = $session->media->sum('size');
+
+            return $session;
+        });
 
         $booths = Booth::get();
 
