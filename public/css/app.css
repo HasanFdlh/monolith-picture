@@ -142,3 +142,334 @@ body{
 .gallery-item img:hover {
     transform: scale(1.05);
 }
+/* =========================
+   BRANDING PAGE
+========================= */
+
+.branding-panel {
+    width: 100%;
+    padding: 28px 26px 80px;
+    box-sizing: border-box;
+}
+
+.branding-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.branding-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #111827;
+    font-size: 18px;
+}
+
+.branding-header h1 {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: #111827;
+}
+
+.branding-header p {
+    margin: 6px 0 0;
+    color: #374151;
+    font-size: 14px;
+}
+
+
+/* =========================
+   2 COLUMN GRID
+========================= */
+
+.branding-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px;
+    align-items: start;
+    width: 100%;
+}
+
+.section-block {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================
+   SECTION TITLE
+========================= */
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 500;
+    color: #111827;
+}
+
+.section-title i {
+    font-size: 13px;
+}
+
+
+/* =========================
+   FORM STACK
+========================= */
+
+.form-stack,
+.social-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.form-stack > div,
+.social-stack > div {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================
+   LABEL
+========================= */
+
+.field-label {
+    display: block !important;
+    width: 100%;
+    margin: 0 0 6px !important;
+
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 500;
+    color: #111827;
+}
+
+.required {
+    color: #dc2626;
+}
+
+
+/* =========================
+   INPUT / SELECT / TEXTAREA
+========================= */
+
+.branding-panel input:not([type="color"]),
+.branding-panel select,
+.branding-panel textarea {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: #fff;
+
+    color: #111827;
+    font-size: 14px;
+
+    outline: none;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+/* Text input */
+
+.branding-panel input:not([type="color"]) {
+    height: 38px;
+    padding: 8px 10px;
+}
+
+
+/* Select */
+
+.branding-panel select {
+    height: 38px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+
+/* Textarea */
+
+.branding-panel textarea {
+    min-height: 92px;
+    height: 92px;
+    padding: 10px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+
+/* Focus */
+
+.branding-panel input:not([type="color"]):focus,
+.branding-panel select:focus,
+.branding-panel textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+
+/* =========================
+   FILE INPUT
+========================= */
+
+.branding-panel input[type="file"] {
+    width: 100%;
+    height: 38px;
+    padding: 0;
+
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: #fff;
+
+    font-size: 13px;
+    color: #374151;
+}
+
+.branding-panel input[type="file"]::file-selector-button {
+    height: 100%;
+    margin-right: 10px;
+    padding: 0 12px;
+
+    border: 0;
+    border-right: 1px solid #d1d5db;
+
+    background: #f9fafb;
+    color: #111827;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   COLOR INPUT
+========================= */
+
+.color-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.form-control-color {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px;
+    padding: 3px;
+
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: #fff;
+
+    cursor: pointer;
+}
+
+.color-preview {
+    flex: 1;
+    height: 38px;
+
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+}
+
+
+/* =========================
+   GRADIENT PREVIEW
+========================= */
+
+.gradient-preview {
+    width: 100%;
+    height: 34px;
+
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================
+   LOGO PREVIEW
+========================= */
+
+.branding-panel .mt-2 {
+    margin-top: 8px !important;
+}
+
+.branding-panel .mt-2 img {
+    display: block;
+    max-width: 160px;
+    max-height: 80px;
+    object-fit: contain;
+}
+
+
+/* =========================
+   SAVE BUTTON
+========================= */
+
+.branding-panel .d-flex.justify-content-end {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px !important;
+}
+
+.branding-panel .btn-primary {
+    height: 38px;
+    padding: 0 18px;
+
+    border: 0;
+    border-radius: 5px;
+
+    background: #4f46e5;
+    color: #fff;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.branding-panel .btn-primary:hover {
+    background: #4338ca;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+    .branding-grid {
+        grid-template-columns: 1fr;
+        row-gap: 28px;
+    }
+}
+
+@media (max-width: 600px) {
+    .branding-panel {
+        padding: 20px 16px 60px;
+    }
+
+    .branding-header h1 {
+        font-size: 26px;
+    }
+}
