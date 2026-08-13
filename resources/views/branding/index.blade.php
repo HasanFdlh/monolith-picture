@@ -37,8 +37,14 @@
             </div>
 
             <div>
-              <label for="logo" class="field-label">Upload Logo</label>
-              <input id="logo" name="logo" type="file" class="form-control" accept="image/*">
+              <label class="field-label">Upload Logo</label>
+              <div class="upload-box">
+                <div class="file-upload">
+                  <label for="logo" class="browse-btn">Choose file</label>
+                  <span class="file-name" id="logo-filename">No file chosen</span>
+                </div>
+                <input id="logo" name="logo" type="file" accept="image/*" style="display:none;">
+              </div>
               @if ($branding->logo_path)
                 <div class="mt-2">
                   <img src="{{ asset('storage/' . $branding->logo_path) }}" alt="Logo"
@@ -167,4 +173,15 @@
       </div>
     </form>
   </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var input = document.getElementById('logo');
+  var nameEl = document.getElementById('logo-filename');
+  if (!input || !nameEl) return;
+  input.addEventListener('change', function () {
+    var file = input.files[0];
+    nameEl.textContent = file ? file.name : 'No file chosen';
+  });
+});
+</script>
 @endsection

@@ -32,12 +32,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/branding', [BrandingController::class, 'store'])->name('branding.store');
     Route::put('/branding', [BrandingController::class, 'update'])->name('branding.update');
 
-    Route::get('/frames', [PhotoFrameController::class, 'index'])->name('frames.index');
-    Route::get('/frames/create', [PhotoFrameController::class, 'create'])->name('frames.create');
-    Route::post('/frames', [PhotoFrameController::class, 'store'])->name('frames.store');
-    Route::get('/frames/{frame}/edit', [PhotoFrameController::class, 'edit'])->name('frames.edit');
-    Route::put('/frames/{frame}', [PhotoFrameController::class, 'update'])->name('frames.update');
-    Route::delete('/frames/{frame}', [PhotoFrameController::class, 'destroy'])->name('frames.destroy');
+    Route::resource('frames', PhotoFrameController::class);
+
+    Route::patch('/frames/{frame}/toggle-status', [PhotoFrameController::class, 'toggleStatus'])
+        ->name('frames.toggle-status');
 
     Route::post('/logout', [AuthController::class, 'logout']);
 

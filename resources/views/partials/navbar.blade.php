@@ -12,13 +12,13 @@
 
     <div>
 
-      <strong>0.05 / 2 GB</strong>
+      <strong>{{ $storageStats['usedDisplay'] ?? '0.00' }} / {{ $storageStats['maxGb'] ?? 4 }} GB</strong>
 
       <small>Storage Used</small>
 
     </div>
 
-    <span>3%</span>
+    <span>{{ $storageStats['percent'] ?? 0 }}%</span>
 
   </div>
 
