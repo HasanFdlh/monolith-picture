@@ -51,6 +51,7 @@ class PhotoFrameController extends Controller
         ]);
 
         $file = $request->file('file');
+        $layout = $this->validatedLayout($validated['layout_json'] ?? null);
 
         // Simpan file
         $path = $file->store('frames', 'public');
@@ -71,11 +72,11 @@ class PhotoFrameController extends Controller
 
             'is_active' => $status === 'active',
 
-            'layout_json' => $validated['layout_json'] ?? json_encode([
+            'layout_json' => $layout ?? [
                 'slots' => [],
                 'width' => 1000,
                 'height' => 700,
-            ]),
+            ],
 
             'notes' => $validated['notes'] ?? null,
         ]);
@@ -152,6 +153,7 @@ class PhotoFrameController extends Controller
 
         $validated['status'] = $status;
         $validated['is_active'] = $status === 'active';
+        $validated['layout_json'] = $this->validatedLayout($validated['layout_json'] ?? null) ?? $frame->layout_json;
 
         $frame->update($validated);
 
@@ -208,5 +210,52 @@ class PhotoFrameController extends Controller
         return redirect()
             ->route('frames.index')
             ->with('success', 'Photo frame deleted successfully.');
+    }
+
+    /**
+     * Layout coordinates use percentages so they can be rendered consistently
+     * for previews and any print resolution.
+     */
+    private function validatedLayout(?string $layoutJson): ?array
+    {
+        if (!$layoutJson) {
+            return null;
+        }
+
+        $layout = json_decode($layoutJson, true, 512, JSON_THROW_ON_ERROR);
+
+        if (!is_array($layout) || !is_array($layout['slots'] ?? null) || count($layout['slots']) > 12) {
+            abort(422, 'Invalid photo layout.');
+        }
+
+        $slots = collect($layout['slots'])->map(function ($slot, $index) {
+            if (!is_array($slot)) {
+                abort(422, 'Invalid photo slot.');
+            }
+
+            $x = (float) ($slot['x'] ?? 0);
+            $y = (float) ($slot['y'] ?? 0);
+            $w = (float) ($slot['w'] ?? 0);
+            $h = (float) ($slot['h'] ?? 0);
+
+            if ($x < 0 || $y < 0 || $w < 1 || $h < 1 || $x + $w > 100 || $y + $h > 100) {
+                abort(422, 'Photo slot must stay within the frame.');
+            }
+
+            return [
+                'id' => substr((string) ($slot['id'] ?? Str::uuid()), 0, 64),
+                'label' => Str::limit(trim((string) ($slot['label'] ?? 'Foto ' . ($index + 1))), 50, ''),
+                'x' => round($x, 3),
+                'y' => round($y, 3),
+                'w' => round($w, 3),
+                'h' => round($h, 3),
+            ];
+        })->all();
+
+        return [
+            'width' => max(1, (int) ($layout['width'] ?? 1000)),
+            'height' => max(1, (int) ($layout['height'] ?? 700)),
+            'slots' => $slots,
+        ];
     }
 }

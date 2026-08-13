@@ -855,6 +855,16 @@ textarea {
     font-weight: 700;
 }
 
+.editor-eyebrow { margin: 0 0 4px; color: #7dd3fc; font-size: .76rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.editor-help, .editor-shortcut { color: rgba(255,255,255,.78); font-size: .9rem; line-height: 1.55; }
+.editor-text-input { width: 100%; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; padding: .65rem .7rem; background: rgba(255,255,255,.1); color: #fff; }
+.editor-text-input::placeholder { color: rgba(255,255,255,.55); }
+.editor-button-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.editor-action { border: 0; border-radius: 8px; padding: .62rem .5rem; background: #38bdf8; color: #082f49; font-size: .82rem; font-weight: 700; cursor: pointer; }
+.editor-action-danger { background: #fecaca; color: #991b1b; }
+.editor-action-muted { background: rgba(255,255,255,.13); color: #fff; }
+.ratio-buttons { grid-template-columns: repeat(3, 1fr); }
+
 .editor-sidebar ol {
     padding-left: 20px;
     margin: 0 0 20px;
@@ -952,11 +962,15 @@ textarea {
     padding: 22px;
 }
 
+.editor-stage { min-height: 560px; display: grid; place-items: center; overflow: auto; padding: 18px; }
+
 .editor-toolbar {
     display: flex;
     gap: 8px;
     margin-bottom: 10px;
 }
+.editor-toolbar #slotCount { font-weight: 700; color: #1e3a5f; }
+.toolbar-hint { margin-left: auto; color: #64748b; font-size: .85rem; }
 
 .toolbar-btn {
     background: #fff;
@@ -972,44 +986,55 @@ textarea {
 }
 
 .editor-canvas {
-    height: 100%;
+    width: min(100%, 820px);
+    aspect-ratio: 10 / 7;
     border: 2px solid #dfe3eb;
-    background: rgba(255,255,255,0.5);
+    background: #fff center / contain no-repeat var(--frame-image);
     position: relative;
     overflow: hidden;
-    min-height: 560px;
+    transform-origin: center;
+    transition: transform .15s ease;
 }
 
 .layout-grid {
     width: 100%;
     height: 100%;
-    min-height: 560px;
-    background-image: radial-gradient(circle, rgba(148,163,184,0.5) 1px, transparent 1px);
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(56,189,248,.75) 1px, transparent 1px);
     background-size: 14px 14px;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-    grid-template-rows: repeat(3, minmax(120px, 1fr));
-    gap: 12px;
-    padding: 16px;
 }
 
 .slot-box {
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(17, 24, 39, 0.08);
-    background: rgba(187, 247, 208, 0.9);
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #0ea5e9;
+    background: rgba(14,165,233,.2);
     font-weight: 600;
-    color: #111827;
+    color: #082f49;
     text-align: center;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 8px;
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+    background-position: center;
+    background-size: cover;
 }
+.toolbar-print-btn { background: #0f766e; color: #fff; border-color: #0f766e; }
+.slot-box small { margin-top: 3px; font-size: .72rem; font-weight: 700; opacity: .7; }
+.slot-box.is-selected { border-color: #f97316; background: rgba(249,115,22,.23); box-shadow: 0 0 0 3px rgba(249,115,22,.2); }
+.slot-resize { position: absolute; right: -7px; bottom: -7px; width: 14px; height: 14px; border: 2px solid #fff; background: #f97316; border-radius: 3px; cursor: nwse-resize; }
 
 .save-layout-row {
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
 }
+.cancel-layout-btn { align-self: center; color: #475569; text-decoration: none; font-weight: 600; margin-right: 14px; }
 
 .save-layout-btn {
     background: linear-gradient(135deg, #4f46e5, #6366f1);
