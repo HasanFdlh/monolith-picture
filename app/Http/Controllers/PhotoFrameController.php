@@ -87,7 +87,11 @@ class PhotoFrameController extends Controller
 
     public function edit(PhotoFrame $frame)
     {
-        return view('frames.edit', compact('frame'));
+        return view('frames.edit', [
+            'title' => 'Edit Photo Frames Management',
+            'subtitle' => 'Edit your photo frame templates',
+            'frame' => $frame,
+        ]);
     }
 
     /**

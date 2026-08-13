@@ -439,6 +439,301 @@
 
     });
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+      const dropzone = document.getElementById('uploadDropzone');
+      const fileInput = document.getElementById('frameFile');
+
+      const uploadTitle = document.getElementById('uploadTitle');
+      const uploadSubtitle = document.getElementById('uploadSubtitle');
+
+      const selectedFile = document.getElementById('selectedFile');
+      const selectedFileName = document.getElementById('selectedFileName');
+      const selectedFileSize = document.getElementById('selectedFileSize');
+
+      const removeFile = document.getElementById('removeFile');
+
+      const advancedMetadata = document.getElementById('advancedMetadata');
+
+      const advancedToggle = document.getElementById('advancedToggle');
+      const advancedContent = document.getElementById('advancedContent');
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | File Input
+      |--------------------------------------------------------------------------
+      */
+
+      fileInput.addEventListener('change', function() {
+
+        if (this.files && this.files.length > 0) {
+          handleFile(this.files[0]);
+        }
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Drag Over
+      |--------------------------------------------------------------------------
+      */
+
+      dropzone.addEventListener('dragover', function(e) {
+
+        e.preventDefault();
+
+        dropzone.classList.add('drag-over');
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Drag Leave
+      |--------------------------------------------------------------------------
+      */
+
+      dropzone.addEventListener('dragleave', function(e) {
+
+        e.preventDefault();
+
+        if (!dropzone.contains(e.relatedTarget)) {
+          dropzone.classList.remove('drag-over');
+        }
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Drop
+      |--------------------------------------------------------------------------
+      */
+
+      dropzone.addEventListener('drop', function(e) {
+
+        e.preventDefault();
+
+        dropzone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+
+        if (!files || files.length === 0) {
+          return;
+        }
+
+        const file = files[0];
+
+        const dataTransfer = new DataTransfer();
+
+        dataTransfer.items.add(file);
+
+        fileInput.files = dataTransfer.files;
+
+        handleFile(file);
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Handle File
+      |--------------------------------------------------------------------------
+      */
+
+      function handleFile(file) {
+
+        const allowedTypes = [
+          'image/png',
+          'image/jpeg',
+          'image/webp'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+
+          alert(
+            'Please select a PNG, JPG, JPEG or WEBP image.'
+          );
+
+          resetFile();
+
+          return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | File Information
+        |--------------------------------------------------------------------------
+        */
+
+        selectedFileName.textContent = file.name;
+
+        selectedFileSize.textContent =
+          formatFileSize(file.size) + ' selected.';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Dropzone
+        |--------------------------------------------------------------------------
+        */
+
+        selectedFile.classList.add('show');
+
+        dropzone.classList.add('has-file');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Text
+        |--------------------------------------------------------------------------
+        */
+
+        uploadTitle.textContent = file.name;
+
+        uploadSubtitle.textContent =
+          formatFileSize(file.size) +
+          ' selected. Review advanced metadata before uploading.';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHOW ADVANCED METADATA
+        |--------------------------------------------------------------------------
+        */
+
+        advancedMetadata.classList.add('show');
+
+      }
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Remove File
+      |--------------------------------------------------------------------------
+      */
+
+      removeFile.addEventListener('click', function(e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        resetFile();
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Reset File
+      |--------------------------------------------------------------------------
+      */
+
+      function resetFile() {
+
+        fileInput.value = '';
+
+        selectedFileName.textContent = '';
+
+        selectedFileSize.textContent = '';
+
+        selectedFile.classList.remove('show');
+
+        dropzone.classList.remove('has-file');
+        dropzone.classList.remove('drag-over');
+
+
+        uploadTitle.textContent =
+          'Drop an image here or click to choose';
+
+
+        uploadSubtitle.textContent =
+          'PNG, JPG, JPEG or WEBP. Portrait and landscape frames are supported.';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hide Metadata
+        |--------------------------------------------------------------------------
+        */
+
+        advancedMetadata.classList.remove('show');
+
+      }
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Advanced Metadata Toggle
+      |--------------------------------------------------------------------------
+      */
+
+      advancedToggle.addEventListener('click', function() {
+
+        advancedMetadata.classList.toggle('collapsed');
+
+      });
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Format File Size
+      |--------------------------------------------------------------------------
+      */
+
+      function formatFileSize(bytes) {
+
+        if (bytes === 0) {
+          return '0 Bytes';
+        }
+
+        const units = [
+          'Bytes',
+          'KB',
+          'MB',
+          'GB'
+        ];
+
+        const index = Math.floor(
+          Math.log(bytes) / Math.log(1024)
+        );
+
+        return (
+          parseFloat(
+            (bytes / Math.pow(1024, index)).toFixed(2)
+          ) +
+          ' ' +
+          units[index]
+        );
+
+      }
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | Entire Dropzone Click
+      |--------------------------------------------------------------------------
+      */
+
+      dropzone.addEventListener('click', function(e) {
+
+        if (
+          e.target.closest('.browse-btn') ||
+          e.target.closest('.remove-file')
+        ) {
+          return;
+        }
+
+        fileInput.click();
+
+      });
+
+    });
+  </script>
 </body>
 
 </html>

@@ -19,62 +19,261 @@
       <form action="{{ route('frames.store') }}" method="POST" enctype="multipart/form-data" class="frame-upload-form">
         @csrf
 
+        {{-- Frame Name --}}
         <div class="upload-name-field">
-          <label for="frame-name">Frame Name</label>
+          <label for="frame-name">
+            Frame Name
+          </label>
 
           <input type="text" id="frame-name" name="name" value="{{ old('name') }}"
             placeholder="Example: Wedding Frame 01" required>
 
           @error('name')
-            <small class="text-danger">{{ $message }}</small>
+            <small class="text-danger">
+              {{ $message }}
+            </small>
           @enderror
         </div>
 
+
+        {{-- Upload Dropzone --}}
         <div class="upload-dropzone" id="uploadDropzone">
+
           <div class="upload-icon">
             <i class="fa-solid fa-cloud-arrow-up"></i>
           </div>
 
+
           <div class="upload-copy">
+
             <div class="upload-title" id="uploadTitle">
               Drop an image here or click to choose
             </div>
 
             <div class="upload-subtitle" id="uploadSubtitle">
-              PNG, JPG, JPEG or WEBP. Portrait and landscape frames are supported.
+              PNG, JPG, JPEG or WEBP.
+              Portrait and landscape frames are supported.
             </div>
 
+
+            {{-- Selected File --}}
             <div class="selected-file" id="selectedFile">
+
               <i class="fa-regular fa-file-image"></i>
 
               <div class="selected-file-info">
+
                 <span class="selected-file-name" id="selectedFileName"></span>
+
                 <span class="selected-file-size" id="selectedFileSize"></span>
+
               </div>
 
               <button type="button" class="remove-file" id="removeFile">
                 <i class="fa-solid fa-xmark"></i>
               </button>
+
             </div>
+
           </div>
 
+
           <label class="browse-btn">
-            <span>Browse Image</span>
+
+            <span>
+              Browse Image
+            </span>
 
             <input type="file" id="frameFile" name="file" accept=".png,.jpg,.jpeg,.webp" required>
+
           </label>
+
         </div>
+
 
         @error('file')
-          <small class="text-danger">{{ $message }}</small>
+          <small class="text-danger">
+            {{ $message }}
+          </small>
         @enderror
 
+
+        {{-- =====================================================
+        ADVANCED METADATA
+    ====================================================== --}}
+
+        <div class="advanced-metadata" id="advancedMetadata">
+
+          <button type="button" class="advanced-header" id="advancedToggle">
+
+            <div class="advanced-title">
+              <i class="fa-solid fa-sliders"></i>
+
+              <span>
+                Advanced metadata
+              </span>
+            </div>
+
+            <i class="fa-solid fa-chevron-up advanced-chevron" id="advancedChevron"></i>
+
+          </button>
+
+
+          <div class="advanced-content" id="advancedContent">
+
+            {{-- Row 1 --}}
+            <div class="metadata-grid metadata-grid-two">
+
+              {{-- Category --}}
+              <div class="metadata-field">
+
+                <label for="category">
+                  Category
+                </label>
+
+                <select name="category" id="category">
+                  <option value="All">
+                    All
+                  </option>
+
+                  @foreach ($frames->pluck('category')->filter()->unique()->sort() as $category)
+                    @if ($category !== 'All')
+                      <option value="{{ $category }}" {{ old('category') === $category ? 'selected' : '' }}>
+                        {{ $category }}
+                      </option>
+                    @endif
+                  @endforeach
+
+                </select>
+
+                <button type="button" class="create-category">
+                  <i class="fa-solid fa-plus"></i>
+                  Create New
+                </button>
+
+              </div>
+
+
+              {{-- Status --}}
+              <div class="metadata-field">
+
+                <label for="status">
+                  Status
+                </label>
+
+                <select name="status" id="status">
+                  <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>
+                    Active
+                  </option>
+
+                  <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>
+                    Inactive
+                  </option>
+                </select>
+
+              </div>
+
+            </div>
+
+
+            {{-- Row 2 --}}
+            <div class="metadata-grid metadata-grid-three">
+
+              {{-- Scope --}}
+              <div class="metadata-field">
+
+                <label for="scope">
+                  Frame Scope
+                </label>
+
+                <select name="scope" id="scope">
+                  <option value="Generic">
+                    Generic
+                  </option>
+
+                  @foreach ($frames->pluck('scope')->filter()->unique()->sort() as $scope)
+                    @if ($scope !== 'Generic')
+                      <option value="{{ $scope }}" {{ old('scope') === $scope ? 'selected' : '' }}>
+                        {{ $scope }}
+                      </option>
+                    @endif
+                  @endforeach
+
+                </select>
+
+              </div>
+
+
+              {{-- Print Size --}}
+              <div class="metadata-field">
+
+                <label for="print_size">
+                  Print Size
+                </label>
+
+                <select name="print_size" id="print_size">
+                  <option value="Normal">
+                    Normal
+                  </option>
+
+                  <option value="4R">
+                    4R
+                  </option>
+
+                  <option value="5R">
+                    5R
+                  </option>
+
+                  <option value="6R">
+                    6R
+                  </option>
+
+                  <option value="A4">
+                    A4
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              {{-- Printer --}}
+              <div class="metadata-field">
+
+                <label for="printer_setting">
+                  Printer Setting
+                </label>
+
+                <select name="printer_setting" id="printer_setting">
+                  <option value="Primary Printer">
+                    Primary Printer
+                  </option>
+
+                  <option value="Secondary Printer">
+                    Secondary Printer
+                  </option>
+                </select>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {{-- Submit --}}
         <div class="upload-submit-wrap">
-          <button type="submit" class="upload-submit-btn">
+
+          <button type="submit" class="upload-submit-btn" id="uploadSubmitBtn">
             <i class="fa-solid fa-cloud-arrow-up"></i>
+
             Upload Frame
           </button>
+
         </div>
+
       </form>
     </div>
 
