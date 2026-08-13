@@ -29,27 +29,16 @@
                 Photo Frames
             </a>
         </li>
-
-        <li>
-            <a href="#">
-                <i class="fa-solid fa-camera"></i>
-                Booth
-            </a>
-        </li>
-
-        <li>
-            <a href="#">
-                <i class="fa-solid fa-folder-open"></i>
-                Sessions
-            </a>
-        </li>
     </ul>
 
     <div class="logout">
-        <a href="#">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            Logout
-        </a>
+        <form id="logout-form" action="{{ url('/logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn-logout" style="background:transparent;border:0;color:rgba(255,255,255,0.85);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Logout
+            </button>
+        </form>
     </div>
 
 </div>
