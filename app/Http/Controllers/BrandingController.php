@@ -10,9 +10,13 @@ class BrandingController extends Controller
 {
     public function index()
     {
-        $branding = Branding::firstOrNew();
+        $data = [
+            "title" => "Branding Settings",
+            "subtitle" => "Customize how your download pages look to visitors",
+            "branding" => Branding::firstOrNew()
+        ];
 
-        return view('branding.index', compact('branding'));
+        return view('branding.index', $data);
     }
 
     public function store(Request $request)

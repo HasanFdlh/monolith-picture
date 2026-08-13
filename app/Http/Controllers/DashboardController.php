@@ -56,6 +56,20 @@ class DashboardController extends Controller
 
         $booths = Booth::get();
 
-        return view('dashboard.index', compact('sessions', 'booths'));
+        $data = [
+            "title" => "Dashboard",
+            "subtitle" => "Overview of your photobooth sessions",
+            "sessions" => $sessions,
+            "booths" => $booths,
+            "filters" => [
+                "booth_id" => $request->booth_id,
+                "search" => $request->search,
+                "from" => $request->from,
+                "to" => $request->to,
+                "limit" => $limit,
+            ],
+        ];
+
+        return view('dashboard.index', $data);
     }
 }

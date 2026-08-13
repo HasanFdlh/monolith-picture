@@ -13,7 +13,14 @@ class PhotoFrameController extends Controller
         $frames = PhotoFrame::latest()->get();
         $total = $frames->count();
 
-        return view('frames.index', compact('frames', 'total'));
+        $data = [
+            "title" => "Photo Frames Management",
+            "subtitle" => "Upload, edit, and manage your photo frame templates",
+            "frames" => $frames,
+            "total" => $total
+        ];
+
+        return view('frames.index', $data);
     }
 
     public function create()

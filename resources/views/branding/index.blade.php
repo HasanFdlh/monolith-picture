@@ -4,15 +4,6 @@
 
 @section('content')
   <div class="branding-panel">
-    <div class="branding-header">
-      <div class="branding-icon">
-        <i class="fa-solid fa-palette"></i>
-      </div>
-      <div>
-        <h1>Branding Settings</h1>
-        <p>Customize how your download pages look to visitors</p>
-      </div>
-    </div>
 
     @if (session('success'))
       <div class="alert alert-success mb-4">{{ session('success') }}</div>
