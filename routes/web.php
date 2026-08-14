@@ -7,6 +7,7 @@ use App\Http\Controllers\PhotoFrameController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PhotoboothTestController;
+use App\Http\Controllers\PrinterSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect('/login'));
@@ -33,6 +34,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/branding', [BrandingController::class, 'index'])->name('branding');
     Route::post('/branding', [BrandingController::class, 'store'])->name('branding.store');
     Route::put('/branding', [BrandingController::class, 'update'])->name('branding.update');
+
+    // Printer settings
+    Route::get('/settings/printer', [PrinterSettingController::class, 'index'])->name('printer.settings');
+    Route::post('/settings/printer', [PrinterSettingController::class, 'store'])->name('printer.settings.save');
 
     Route::resource('frames', PhotoFrameController::class);
 
