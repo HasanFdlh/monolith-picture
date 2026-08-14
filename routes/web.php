@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PhotoFrameController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PhotoboothTestController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect('/login'));
@@ -27,6 +28,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/photobooth-test', [PhotoboothTestController::class, 'index'])->name('photobooth-test');
 
     Route::get('/branding', [BrandingController::class, 'index'])->name('branding');
     Route::post('/branding', [BrandingController::class, 'store'])->name('branding.store');
@@ -41,6 +43,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/sessions/{id}', [SessionController::class, 'show'])->name('sessions.show');
     Route::get('/sessions/{id}/download', [SessionController::class, 'download'])->name('sessions.download');
+    Route::post('/sessions', [SessionController::class, 'store'])->name('sessions.store');
+    Route::put('/sessions/{session}', [SessionController::class, 'update'])->name('sessions.update');
+    Route::post('/sessions/{id}/print', [SessionController::class, 'print'])->name('sessions.print');
     Route::delete('/sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
 
 

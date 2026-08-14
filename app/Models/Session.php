@@ -11,8 +11,13 @@ class Session extends Model
 
     protected $fillable = [
         'booth_id',
+        'photo_frame_id',
         'session_code',
         'customer_name',
+        'layout',
+        'grid',
+        'filter',
+        'email',
         'total_files',
         'total_size',
         'taken_at',
@@ -30,6 +35,11 @@ class Session extends Model
     public function media()
     {
         return $this->hasMany(Media::class);
+    }
+
+    public function photoFrame()
+    {
+        return $this->belongsTo(PhotoFrame::class);
     }
 
     public function shares()

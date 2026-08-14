@@ -29,6 +29,13 @@
                 Photo Frames
             </a>
         </li>
+
+        <li>
+            <a href="{{ route('photobooth-test') }}" class="{{ request()->routeIs('photobooth-test') ? 'active' : '' }}">
+                <i class="fa-solid fa-flask"></i>
+                API Test
+            </a>
+        </li>
     </ul>
 
     <div class="logout">
