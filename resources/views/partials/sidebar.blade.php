@@ -31,6 +31,20 @@
         </li>
 
         <li>
+            <a href="{{ route('packages.index') }}" class="{{ request()->routeIs('packages.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-tags"></i>
+                Paket Foto
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url('/checkout') }}" target="_blank">
+                <i class="fa-solid fa-cash-register"></i>
+                Mulai Sesi (Checkout)
+            </a>
+        </li>
+
+        <li>
             <a href="{{ route('photobooth-test') }}" class="{{ request()->routeIs('photobooth-test') ? 'active' : '' }}">
                 <i class="fa-solid fa-flask"></i>
                 API Test

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             BrandingSeeder::class,
             PhotoFrameSeeder::class,
+            PhotoPackageSeeder::class,
             SessionSeeder::class,
         ]);
     }

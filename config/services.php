@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+        // Berapa menit halaman pembayaran Midtrans berlaku sebelum kadaluarsa.
+        'expiry_minutes' => (int) env('MIDTRANS_EXPIRY_MINUTES', 5),
+        'base_url' => env('MIDTRANS_IS_PRODUCTION', false)
+            ? 'https://app.midtrans.com'
+            : 'https://app.sandbox.midtrans.com',
+    ],
+
 ];

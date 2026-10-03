@@ -2,8 +2,12 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BrandingController;
+use App\Http\Controllers\CaptureController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MidtransCallbackController;
 use App\Http\Controllers\PhotoFrameController;
+use App\Http\Controllers\PhotoPackageController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PhotoboothTestController;
@@ -11,6 +15,24 @@ use App\Http\Controllers\PrinterSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect('/login'));
+
+/*
+|--------------------------------------------------------------------------
+| Public photobooth flow (customer, tanpa login)
+|--------------------------------------------------------------------------
+| Pilih paket -> bayar via Midtrans -> callback sukses -> baru bisa ambil foto.
+*/
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/{payment}/status', [CheckoutController::class, 'status'])->name('checkout.status');
+Route::get('/checkout/{payment}/status.json', [CheckoutController::class, 'statusJson'])->name('checkout.status.json');
+
+Route::get('/capture/{session:session_code}', [CaptureController::class, 'show'])->name('capture.show');
+Route::post('/capture/{session:session_code}/photos', [CaptureController::class, 'store'])->name('capture.store');
+
+// HTTP Notification / callback dari Midtrans (dikecualikan dari CSRF).
+Route::post('/midtrans/notification', [MidtransCallbackController::class, 'notification'])
+    ->name('midtrans.notification');
 
 // GUEST
 Route::middleware('guest')->group(function () {
@@ -43,6 +65,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/frames/{frame}/toggle-status', [PhotoFrameController::class, 'toggleStatus'])
         ->name('frames.toggle-status');
+
+    Route::resource('packages', PhotoPackageController::class)->except(['show', 'create', 'edit']);
+
+    Route::patch('/packages/{package}/toggle-status', [PhotoPackageController::class, 'toggleStatus'])
+        ->name('packages.toggle-status');
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
