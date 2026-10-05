@@ -36,6 +36,14 @@ class PhotoboothController extends Controller
 
     public function store(Request $request)
     {
+        // Sesi baru harus lahir dari pembayaran (POST /api/payments), lalu fotonya
+        // di-upload lewat addPhotos. Jalur ini ditutup bila pembayaran diwajibkan.
+        abort_if(
+            config('photobooth.require_payment'),
+            403,
+            'Pembayaran diperlukan. Buat pembayaran lewat POST /api/payments, lalu upload foto ke sesi yang sudah dibayar.'
+        );
+
         $data = $this->validateSession($request, true);
 
         return DB::transaction(function () use ($request, $data) {
@@ -72,6 +80,8 @@ class PhotoboothController extends Controller
 
     public function update(Request $request, Session $photoSession)
     {
+        $this->ensurePaid($photoSession);
+
         $data = $this->validateSession($request, false);
         if (array_key_exists('photo_frame_id', $data) && $data['photo_frame_id']) {
             $data['grid'] = $this->gridFromFrame(PhotoFrame::findOrFail($data['photo_frame_id']));
@@ -87,6 +97,17 @@ class PhotoboothController extends Controller
     public function addPhotos(Request $request, Session $photoSession)
     {
         $request->validate(['photos' => ['required', 'array', 'min:1'], 'photos.*' => ['file', 'image', 'max:10240']]);
+        $this->ensurePaid($photoSession);
+
+        if (config('photobooth.require_payment')) {
+            $remaining = $photoSession->remainingTakes();
+            abort_if(
+                count($request->file('photos', [])) > $remaining,
+                422,
+                "Sisa take pada sesi ini hanya {$remaining} foto."
+            );
+        }
+
         $this->storePhotos($request, $photoSession);
 
         return response()->json(['data' => $photoSession->fresh()->load('media')], 201);
@@ -135,6 +156,15 @@ class PhotoboothController extends Controller
             'email_sent' => true,
             'print_dispatched' => $printed,
         ]);
+    }
+
+    private function ensurePaid(Session $session): void
+    {
+        abort_if(
+            config('photobooth.require_payment') && !$session->isPaid(),
+            403,
+            'Sesi belum dibayar.'
+        );
     }
 
     private function validateSession(Request $request, bool $creating): array

@@ -41,9 +41,14 @@ return [
         'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
         // Berapa menit halaman pembayaran Midtrans berlaku sebelum kadaluarsa.
         'expiry_minutes' => (int) env('MIDTRANS_EXPIRY_MINUTES', 5),
+        // Host Snap (membuat transaksi / halaman bayar).
         'base_url' => env('MIDTRANS_IS_PRODUCTION', false)
             ? 'https://app.midtrans.com'
             : 'https://app.sandbox.midtrans.com',
+        // Host Core API (cek status, cancel). BEDA dari host Snap di atas.
+        'core_base_url' => env('MIDTRANS_IS_PRODUCTION', false)
+            ? 'https://api.midtrans.com'
+            : 'https://api.sandbox.midtrans.com',
     ],
 
 ];

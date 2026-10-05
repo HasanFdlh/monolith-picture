@@ -14,6 +14,13 @@ class SessionController extends Controller
 {
     public function store(Request $request)
     {
+        // Jalur lama (base64) tidak mengenal pembayaran -> tutup bila pembayaran diwajibkan.
+        abort_if(
+            config('photobooth.require_payment'),
+            403,
+            'Pembayaran diperlukan. Gunakan POST /api/payments terlebih dahulu.'
+        );
+
         $validated = $request->validate([
             'booth_id' => ['required', 'exists:booths,id'],
             'taken_at' => ['nullable', 'date'],

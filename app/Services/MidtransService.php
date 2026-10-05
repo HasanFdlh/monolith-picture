@@ -25,6 +25,12 @@ class MidtransService
         return rtrim((string) config('services.midtrans.base_url'), '/');
     }
 
+    /** Host Core API (status, cancel) - berbeda dari host Snap. */
+    public function coreBaseUrl(): string
+    {
+        return rtrim((string) config('services.midtrans.core_base_url'), '/');
+    }
+
     public function snapUrl(): string
     {
         return $this->baseUrl() . '/snap/v1/transactions';
@@ -32,7 +38,7 @@ class MidtransService
 
     public function statusUrl(string $orderId): string
     {
-        return $this->baseUrl() . '/v2/' . $orderId . '/status';
+        return $this->coreBaseUrl() . '/v2/' . $orderId . '/status';
     }
 
     /**
@@ -100,6 +106,36 @@ class MidtransService
         $response = Http::withBasicAuth($this->serverKey(), '')
             ->acceptJson()
             ->get($this->statusUrl($orderId));
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        // 404 wajar: pelanggan belum memilih metode bayar, jadi transaksi belum tercatat.
+        if ($response->status() !== 404) {
+            Log::warning('Midtrans gagal mengambil status transaksi', [
+                'order_id' => $orderId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Membatalkan transaksi yang masih pending di Midtrans.
+     * Mengembalikan payload Midtrans bila sukses, null bila gagal.
+     */
+    public function cancelTransaction(string $orderId): ?array
+    {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $response = Http::withBasicAuth($this->serverKey(), '')
+            ->acceptJson()
+            ->post($this->coreBaseUrl() . '/v2/' . $orderId . '/cancel');
 
         return $response->successful() ? $response->json() : null;
     }
