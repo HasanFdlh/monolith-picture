@@ -72,10 +72,11 @@ class PhotoFrameController extends Controller
 
             'is_active' => $status === 'active',
 
+            // Tanpa layout dari editor: kanvas strip vertikal tanpa slot.
             'layout_json' => $layout ?? [
                 'slots' => [],
-                'width' => 1000,
-                'height' => 700,
+                'width' => PhotoFrame::DEFAULT_WIDTH,
+                'height' => PhotoFrame::DEFAULT_HEIGHT,
             ],
 
             'notes' => $validated['notes'] ?? null,
@@ -253,8 +254,8 @@ class PhotoFrameController extends Controller
         })->all();
 
         return [
-            'width' => max(1, (int) ($layout['width'] ?? 1000)),
-            'height' => max(1, (int) ($layout['height'] ?? 700)),
+            'width' => max(1, (int) ($layout['width'] ?? PhotoFrame::DEFAULT_WIDTH)),
+            'height' => max(1, (int) ($layout['height'] ?? PhotoFrame::DEFAULT_HEIGHT)),
             'slots' => $slots,
         ];
     }

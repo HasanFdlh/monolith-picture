@@ -4,10 +4,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PhotoboothController;
+use App\Http\Controllers\Api\FrameBackgroundController;
 
 Route::post('/sessions', [SessionController::class, 'store']);
 
 Route::get('/templates', [PhotoboothController::class, 'templates']);
+Route::get('/frame-backgrounds', [FrameBackgroundController::class, 'index']);
 Route::apiResource('photo-sessions', PhotoboothController::class)
     ->parameters(['photo-sessions' => 'photoSession']);
 Route::post('/photo-sessions/{photoSession}/photos', [PhotoboothController::class, 'addPhotos']);

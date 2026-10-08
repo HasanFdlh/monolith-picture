@@ -5,112 +5,46 @@ namespace Database\Seeders;
 use App\Models\PhotoFrame;
 use Illuminate\Database\Seeder;
 
+/**
+ * Template bawaan. Semuanya strip vertikal (memanjang ke bawah, kanvas
+ * 600 x 1800) dan posisi slot disimpan dalam persen, sama seperti yang
+ * ditulis editor layout di dashboard.
+ *
+ * Memakai updateOrCreate supaya `php artisan db:seed --class=PhotoFrameSeeder`
+ * juga mengubah template lama (grid landscape) menjadi vertikal.
+ */
 class PhotoFrameSeeder extends Seeder
 {
     public function run(): void
     {
-        PhotoFrame::firstOrCreate(
-            ['name' => 'The (5)'],
-            [
-                'category' => 'All',
-                'scope' => 'Generic',
-                'status' => 'active',
-                'print_size' => 'Normal',
-                'printer_setting' => 'Primary Printer',
-                'file_path' => 'frames/demo-1.png',
-                'thumbnail_path' => 'frames/demo-1.png',
-                'is_active' => true,
-                'layout_json' => [
-                    'slots' => [
-                        ['x' => 0, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Main Character'],
-                        ['x' => 1, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Ride or Die'],
-                        ['x' => 0, 'y' => 1, 'w' => 1, 'h' => 1, 'label' => 'The Trendsetter'],
-                        ['x' => 1, 'y' => 1, 'w' => 1, 'h' => 1, 'label' => 'The Chaos'],
+        $captions = ['The Main Character', 'The Ride or Die', 'The Trendsetter', 'The Chaos'];
+
+        $frames = [
+            ['name' => 'The (5)', 'file' => 'frames/demo-1.png', 'slots' => 4, 'labels' => $captions],
+            ['name' => 'The (4)', 'file' => 'frames/demo-2.png', 'slots' => 3, 'labels' => $captions],
+            ['name' => 'Landscape', 'file' => 'frames/demo-3.png', 'slots' => 4, 'labels' => []],
+            ['name' => 'Frame 4x4', 'file' => null, 'slots' => 4, 'labels' => []],
+        ];
+
+        foreach ($frames as $frame) {
+            PhotoFrame::updateOrCreate(
+                ['name' => $frame['name']],
+                [
+                    'category' => 'All',
+                    'scope' => 'Generic',
+                    'status' => 'active',
+                    'print_size' => 'Normal',
+                    'printer_setting' => 'Primary Printer',
+                    'file_path' => $frame['file'],
+                    'thumbnail_path' => $frame['file'],
+                    'is_active' => true,
+                    'layout_json' => [
+                        'width' => PhotoFrame::DEFAULT_WIDTH,
+                        'height' => PhotoFrame::DEFAULT_HEIGHT,
+                        'slots' => PhotoFrame::verticalSlots($frame['slots'], $frame['labels']),
                     ],
-                ],
-            ]
-        );
-
-        PhotoFrame::firstOrCreate(
-            ['name' => 'The (4)'],
-            [
-                'category' => 'All',
-                'scope' => 'Generic',
-                'status' => 'active',
-                'print_size' => 'Normal',
-                'printer_setting' => 'Primary Printer',
-                'file_path' => 'frames/demo-2.png',
-                'thumbnail_path' => 'frames/demo-2.png',
-                'is_active' => true,
-                'layout_json' => [
-                    'slots' => [
-                        ['x' => 0, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Main Character'],
-                        ['x' => 1, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Ride or Die'],
-                    ],
-                ],
-            ]
-        );
-
-        PhotoFrame::firstOrCreate(
-            ['name' => 'Landscape'],
-            [
-                'category' => 'All',
-                'scope' => 'Generic',
-                'status' => 'active',
-                'print_size' => 'Normal',
-                'printer_setting' => 'Primary Printer',
-                'file_path' => 'frames/demo-3.png',
-                'thumbnail_path' => 'frames/demo-3.png',
-                'is_active' => true,
-                'layout_json' => [
-                    'slots' => [
-                        ['x' => 0, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Main Character'],
-                        ['x' => 1, 'y' => 0, 'w' => 1, 'h' => 1, 'label' => 'The Ride or Die'],
-                        ['x' => 0, 'y' => 1, 'w' => 1, 'h' => 1, 'label' => 'The Trendsetter'],
-                        ['x' => 1, 'y' => 1, 'w' => 1, 'h' => 1, 'label' => 'The Chaos'],
-                    ],
-                ],
-            ]
-        );
-
-        PhotoFrame::firstOrCreate(
-            ['name' => 'Frame 4x4'],
-            [
-                'category' => 'All',
-                'scope' => 'Generic',
-                'status' => 'active',
-                'print_size' => 'Normal',
-                'printer_setting' => 'Primary Printer',
-                'is_active' => true,
-                'layout_json' => [
-                    'width' => 1000,
-                    'height' => 1000,
-                    'slots' => $this->gridSlots(4, 4),
-                ],
-            ]
-        );
-    }
-
-    private function gridSlots(int $columns, int $rows): array
-    {
-        $slots = [];
-        $width = 100 / $columns;
-        $height = 100 / $rows;
-
-        for ($row = 0; $row < $rows; $row++) {
-            for ($column = 0; $column < $columns; $column++) {
-                $number = count($slots) + 1;
-                $slots[] = [
-                    'id' => "photo-{$number}",
-                    'label' => "Foto {$number}",
-                    'x' => $column * $width,
-                    'y' => $row * $height,
-                    'w' => $width,
-                    'h' => $height,
-                ];
-            }
+                ]
+            );
         }
-
-        return $slots;
     }
 }

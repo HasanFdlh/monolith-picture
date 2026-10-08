@@ -30,6 +30,13 @@
       </div>
 
       <div class="editor-controls">
+        <label>Ukuran frame <span id="canvasSize"></span></label>
+        <p class="editor-shortcut">Tarik sisi kanan, sisi bawah, atau kotak hijau di sudut kanan-bawah frame untuk
+          mengatur lebar dan tinggi. Posisi slot ikut menyesuaikan secara proporsional.</p>
+        <button type="button" class="reset-btn" id="resetCanvasSize">Ukuran asli PNG</button>
+      </div>
+
+      <div class="editor-controls">
         <label for="canvasZoom">Zoom <span id="zoomValue">100%</span></label>
         <input id="canvasZoom" type="range" min="60" max="140" value="100">
         <button type="button" class="reset-btn" id="resetLayout">Reset layout</button>
@@ -52,6 +59,9 @@
         <div class="editor-canvas" id="editorCanvas"
           style="--frame-image: url('{{ asset('storage/' . $frame->file_path) }}')">
           <div class="layout-grid" id="layoutGrid"></div>
+          <span class="canvas-handle canvas-handle-right" data-canvas-handle="right" title="Tarik untuk ubah lebar"></span>
+          <span class="canvas-handle canvas-handle-bottom" data-canvas-handle="bottom" title="Tarik untuk ubah tinggi"></span>
+          <span class="canvas-handle canvas-handle-corner" data-canvas-handle="both" title="Tarik untuk ubah lebar & tinggi"></span>
         </div>
       </div>
     </div>
@@ -65,8 +75,8 @@
           'layout_json',
           json_encode(
               $frame->layout_json ?? [
-                  'width' => 1000,
-                  'height' => 700,
+                  'width' => \App\Models\PhotoFrame::DEFAULT_WIDTH,
+                  'height' => \App\Models\PhotoFrame::DEFAULT_HEIGHT,
                   'slots' => [],
               ],
           ),
@@ -95,20 +105,76 @@
       } catch (_) {
         layout = {};
       }
+      // Ukuran yang sudah tersimpan tidak boleh ditimpa ukuran PNG saat dibuka.
+      const hasSavedSize = Number(layout.width) > 0 && Number(layout.height) > 0;
       layout = {
-        width: Number(layout.width) || 1000,
-        height: Number(layout.height) || 700,
+        width: Number(layout.width) || {{ \App\Models\PhotoFrame::DEFAULT_WIDTH }},
+        height: Number(layout.height) || {{ \App\Models\PhotoFrame::DEFAULT_HEIGHT }},
         slots: Array.isArray(layout.slots) ? layout.slots : []
       };
       const legacyGrid = layout.slots.length && layout.slots.every(slot => Number(slot.w) <= 1 && Number(slot.h) <= 1);
+      // Template lama (grid 2x2) disusun ulang menjadi strip vertikal:
+      // slot bertumpuk dari atas ke bawah, sisa bawah untuk branding.
+      const stackTop = 4, stackBottom = 14, stackGap = 2;
+      const stackHeight = layout.slots.length
+        ? (100 - stackTop - stackBottom - stackGap * (layout.slots.length - 1)) / layout.slots.length
+        : 0;
       layout.slots = layout.slots.map((slot, i) => ({
         id: slot.id || `slot-${Date.now()}-${i}`,
         label: slot.label || `Foto ${i + 1}`,
-        x: legacyGrid ? (Number(slot.x) * 50 + 5) : Number(slot.x) || 10,
-        y: legacyGrid ? (Number(slot.y) * 50 + 5) : Number(slot.y) || 10,
-        w: legacyGrid ? 40 : Number(slot.w) || 35,
-        h: legacyGrid ? 40 : Number(slot.h) || 35
+        x: legacyGrid ? 8 : Number(slot.x) || 10,
+        y: legacyGrid ? stackTop + i * (stackHeight + stackGap) : Number(slot.y) || 10,
+        w: legacyGrid ? 84 : Number(slot.w) || 35,
+        h: legacyGrid ? stackHeight : Number(slot.h) || 35
       }));
+      // Rasio kanvas langsung mengikuti layout (vertikal bila tinggi > lebar),
+      // tidak menunggu PNG frame selesai dimuat.
+      const canvasEl = document.getElementById('editorCanvas');
+      const canvasSizeLabel = document.getElementById('canvasSize');
+      // view = ukuran kanvas di layar (px CSS); layout.width/height = ukuran cetak.
+      const view = { w: 0, h: 0 };
+      const paintCanvas = () => {
+        canvasEl.style.aspectRatio = 'auto';
+        canvasEl.style.width = `${view.w}px`;
+        canvasEl.style.height = `${view.h}px`;
+        canvasSizeLabel.textContent = `${layout.width} × ${layout.height} px`;
+      };
+      const fitCanvas = () => {
+        view.w = layout.height > layout.width ? 360 : 820;
+        view.h = view.w * layout.height / layout.width;
+        paintCanvas();
+      };
+      fitCanvas();
+      // Drag sisi / sudut frame untuk mengubah lebar dan tinggi.
+      let canvasDrag = null;
+      document.querySelectorAll('[data-canvas-handle]').forEach(handle => {
+        handle.addEventListener('pointerdown', event => {
+          canvasDrag = {
+            mode: handle.dataset.canvasHandle,
+            startX: event.clientX,
+            startY: event.clientY,
+            w: view.w,
+            h: view.h,
+            scale: layout.width / view.w
+          };
+          handle.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+      window.addEventListener('pointermove', event => {
+        if (!canvasDrag) return;
+        const zoom = (Number(document.getElementById('canvasZoom').value) || 100) / 100;
+        const dx = (event.clientX - canvasDrag.startX) / zoom;
+        const dy = (event.clientY - canvasDrag.startY) / zoom;
+        if (canvasDrag.mode !== 'bottom') view.w = Math.max(120, Math.min(canvasDrag.w + dx, 1400));
+        if (canvasDrag.mode !== 'right') view.h = Math.max(120, Math.min(canvasDrag.h + dy, 4000));
+        layout.width = Math.max(1, Math.round(view.w * canvasDrag.scale));
+        layout.height = Math.max(1, Math.round(view.h * canvasDrag.scale));
+        paintCanvas();
+        sync();
+      });
+      window.addEventListener('pointerup', () => canvasDrag = null);
       let selectedId = layout.slots[0]?.id || null,
         interaction = null;
       const testPhotos = new Map();
@@ -247,17 +313,28 @@
         event.target.value = '';
         render();
       };
+      let naturalSize = null;
       const loadImage = source => new Promise((resolve, reject) => {
         const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = source;
       });
       loadImage(frameSource).then(image => {
         // The original template dimensions define the print canvas. This keeps
         // slot coordinates identical between the editor, preview, and print.
-        layout.width = image.naturalWidth;
-        layout.height = image.naturalHeight;
-        document.getElementById('editorCanvas').style.aspectRatio = `${image.naturalWidth} / ${image.naturalHeight}`;
+        naturalSize = { width: image.naturalWidth, height: image.naturalHeight };
+        if (!hasSavedSize) {
+          layout.width = naturalSize.width;
+          layout.height = naturalSize.height;
+          fitCanvas();
+        }
         sync();
       }).catch(() => {});
+      document.getElementById('resetCanvasSize').onclick = () => {
+        if (!naturalSize) { alert('PNG frame belum tersedia, ukuran asli tidak diketahui.'); return; }
+        layout.width = naturalSize.width;
+        layout.height = naturalSize.height;
+        fitCanvas();
+        sync();
+      };
       const renderFinal = async () => {
         if (!layout.slots.length) throw new Error('Tambahkan minimal satu slot terlebih dahulu.');
         if (!testPhotos.size) throw new Error('Masukkan foto test terlebih dahulu.');

@@ -31,6 +31,13 @@
         </li>
 
         <li>
+            <a href="{{ route('frame-backgrounds.index') }}" class="{{ request()->routeIs('frame-backgrounds.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-fill-drip"></i>
+                Frame Backgrounds
+            </a>
+        </li>
+
+        <li>
             <a href="{{ route('packages.index') }}" class="{{ request()->routeIs('packages.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-tags"></i>
                 Paket Foto

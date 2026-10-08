@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\CaptureController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FrameBackgroundController;
 use App\Http\Controllers\MidtransCallbackController;
 use App\Http\Controllers\PhotoFrameController;
 use App\Http\Controllers\PhotoPackageController;
@@ -65,6 +66,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/frames/{frame}/toggle-status', [PhotoFrameController::class, 'toggleStatus'])
         ->name('frames.toggle-status');
+
+    // Background untuk frame bawaan aplikasi Flutter.
+    Route::get('/frame-backgrounds', [FrameBackgroundController::class, 'index'])->name('frame-backgrounds.index');
+    Route::post('/frame-backgrounds/{key}', [FrameBackgroundController::class, 'update'])->name('frame-backgrounds.update');
+    Route::get('/frame-backgrounds/{key}/edit', [FrameBackgroundController::class, 'edit'])->name('frame-backgrounds.edit');
+    Route::post('/frame-backgrounds/{key}/area', [FrameBackgroundController::class, 'saveArea'])->name('frame-backgrounds.area');
+    Route::delete('/frame-backgrounds/{key}', [FrameBackgroundController::class, 'destroy'])->name('frame-backgrounds.destroy');
 
     Route::resource('packages', PhotoPackageController::class)->except(['show', 'create', 'edit']);
 
