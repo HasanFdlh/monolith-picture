@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\SessionPrintMail;
 use App\Models\Media;
 use App\Models\PhotoFrame;
 use App\Models\Session;
+use App\Services\SessionPrintService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use ZipArchive;
 
 class PhotoboothController extends Controller
 {
@@ -132,30 +130,18 @@ class PhotoboothController extends Controller
         return response()->noContent();
     }
 
-    public function print(Request $request, Session $photoSession)
+    public function print(Request $request, Session $photoSession, SessionPrintService $printer)
     {
         $data = $request->validate(['email' => ['required', 'email']]);
         $photoSession->load('media');
         abort_if($photoSession->media->isEmpty(), 422, 'Session has no photos to print.');
 
-        $zipPath = $this->createZip($photoSession);
-        Mail::to($data['email'])->send(new SessionPrintMail($photoSession, $zipPath));
+        $result = $printer->dispatch($photoSession, $data['email']);
 
-        $printerCommand = config('photobooth.printer_command');
-        $printed = false;
-        if ($printerCommand) {
-            $command = str_replace('{file}', escapeshellarg($zipPath), $printerCommand);
-            exec($command, $output, $status);
-            $printed = $status === 0;
-        }
+        // Tidak ada satu pun yang berhasil (email gagal DAN printer gagal): jangan balas 200.
+        $status = ($result['email_sent'] || $result['print_dispatched']) ? 200 : 502;
 
-        $photoSession->update(['email' => $data['email']]);
-
-        return response()->json([
-            'message' => $printed ? 'Print job sent and email sent.' : 'Email sent. Configure PHOTOBOOTH_PRINTER_COMMAND to dispatch a print job.',
-            'email_sent' => true,
-            'print_dispatched' => $printed,
-        ]);
+        return response()->json($result, $status);
     }
 
     private function ensurePaid(Session $session): void
@@ -224,23 +210,5 @@ class PhotoboothController extends Controller
         $columns = collect($slots)->pluck('x')->map(fn ($value) => (string) $value)->unique()->count();
 
         return "{$columns}x{$rows}";
-    }
-
-    private function createZip(Session $session): string
-    {
-        $path = storage_path("app/temp/session-{$session->session_code}.zip");
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
-
-        $zip = new ZipArchive();
-        abort_unless($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true, 500, 'Cannot create print package.');
-        foreach ($session->media as $media) {
-            $storedPath = ltrim(preg_replace('#^/?storage/#', '', $media->path), '/');
-            if (Storage::disk('public')->exists($storedPath)) {
-                $zip->addFromString($media->file_name, Storage::disk('public')->get($storedPath));
-            }
-        }
-        $zip->close();
-
-        return $path;
     }
 }

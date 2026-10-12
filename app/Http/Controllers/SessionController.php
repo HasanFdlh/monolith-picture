@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SessionPrintMail;
+use App\Services\SessionPrintService;
 
 class SessionController extends Controller
 {
@@ -179,7 +179,7 @@ class SessionController extends Controller
         return response()->json(['message' => 'Session deleted'], 200);
     }
 
-    public function print(Request $request, $id)
+    public function print(Request $request, $id, SessionPrintService $printer)
     {
         $request->validate([
             'email' => 'required|email',
@@ -187,42 +187,11 @@ class SessionController extends Controller
 
         $session = Session::with('media')->findOrFail($id);
 
-        $zipName = 'session-' . $session->session_code . '.zip';
-        $zipPath = storage_path('app/temp/' . $zipName);
+        $result = $printer->dispatch($session, $request->input('email'));
 
-        if (!is_dir(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
-
-        $zip = new \ZipArchive;
-
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-            foreach ($session->media as $media) {
-                $path = ltrim(preg_replace('#^/?storage/#', '', $media->path), '/');
-                if (Storage::disk('public')->exists($path)) {
-                    $zip->addFromString($media->file_name ?? basename($path), Storage::disk('public')->get($path));
-                }
-            }
-            $zip->close();
-        } else {
-            abort(500, 'Could not create the session print package.');
-        }
-
-        // send email with attachment
-        try {
-            Mail::to($request->input('email'))->send(new SessionPrintMail($session, $zipPath));
-        } catch (\Exception $e) {
-            // continue but report error
-            return response()->json(['error' => 'Failed to send email: ' . $e->getMessage()], 500);
-        }
-
-        // optional auto-print: run a configured command replacing {file}
-        $printerCmd = config('photobooth.printer_command');
-        if ($printerCmd) {
-            $cmd = str_replace('{file}', escapeshellarg($zipPath), $printerCmd);
-            @exec($cmd . ' > /dev/null 2>&1 &');
-        }
-
-        return response()->json(['message' => 'Print job started and email sent'], 200);
+        return response()->json(
+            $result,
+            ($result['email_sent'] || $result['print_dispatched']) ? 200 : 502
+        );
     }
 }

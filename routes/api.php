@@ -1,10 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PhotoboothController;
 use App\Http\Controllers\Api\FrameBackgroundController;
+
+// Pengaturan server untuk kiosk (sumber kebenaran `require_payment`) + peringatan setup.
+Route::get('/config', [ConfigController::class, 'show']);
 
 Route::post('/sessions', [SessionController::class, 'store']);
 
