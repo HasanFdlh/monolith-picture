@@ -12,10 +12,10 @@ class FrameBackground extends Model
 {
     protected $fillable = [
         'frame_key', 'name', 'image_path', 'width', 'height',
-        'area_x', 'area_y', 'area_w', 'area_h', 'is_active',
+        'area_x', 'area_y', 'area_w', 'area_h', 'is_active', 'sort_order',
     ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = ['is_active' => 'boolean', 'sort_order' => 'integer'];
 
     protected $appends = ['image_url', 'area'];
 
@@ -37,6 +37,32 @@ class FrameBackground extends Model
         ['key' => 'row-3',            'name' => 'Sebaris 3 Foto',     'slots' => 3, 'cols' => 3, 'rows' => 1, 'aspect' => 2.40],
         ['key' => 'minimal-slate',    'name' => 'Minimal Slate',      'slots' => 4, 'cols' => 4, 'rows' => 1, 'aspect' => 3.00],
     ];
+
+    /** Urutan tampil di aplikasi: sort_order lalu urutan upload. */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * frame_key khusus: desain yang berlaku untuk SEMUA frame bawaan (upload
+     * sekali). API menggandakannya per frame; aplikasi menyesuaikan susunan
+     * foto dengan bentuk area desain.
+     */
+    public const UNIVERSAL_KEY = 'all';
+
+    public const UNIVERSAL = [
+        'key' => self::UNIVERSAL_KEY,
+        'name' => 'Semua Frame',
+        // Hanya untuk pratinjau di dashboard (2 kolom x 4 baris).
+        'slots' => 8, 'cols' => 2, 'rows' => 4, 'aspect' => 0.60,
+    ];
+
+    /** Entri katalog frame, atau entri "Semua Frame" untuk key `all`. */
+    public static function entry(string $key): ?array
+    {
+        return $key === self::UNIVERSAL_KEY ? self::UNIVERSAL : self::catalogEntry($key);
+    }
 
     public static function catalogEntry(string $key): ?array
     {
@@ -77,8 +103,11 @@ class FrameBackground extends Model
             return null;
         }
 
+        // Dilayani lewat route API (bukan asset('storage/...')) supaya gambar
+        // tetap tampil walau `php artisan storage:link` belum dijalankan, dan
+        // membawa header CORS bila aplikasi Flutter dijalankan di web/Chrome.
         // ?v= supaya aplikasi mengambil gambar baru setelah di-upload ulang.
-        return asset('storage/' . ltrim($this->image_path, '/'))
+        return route('api.frame-backgrounds.image', ['background' => $this->id])
             . '?v=' . ($this->updated_at?->timestamp ?? 0);
     }
 }

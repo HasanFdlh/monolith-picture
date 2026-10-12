@@ -14,6 +14,8 @@ Route::post('/sessions', [SessionController::class, 'store']);
 
 Route::get('/templates', [PhotoboothController::class, 'templates']);
 Route::get('/frame-backgrounds', [FrameBackgroundController::class, 'index']);
+Route::get('/frame-backgrounds/{background}/image', [FrameBackgroundController::class, 'image'])
+    ->name('api.frame-backgrounds.image');
 Route::apiResource('photo-sessions', PhotoboothController::class)
     ->parameters(['photo-sessions' => 'photoSession']);
 Route::post('/photo-sessions/{photoSession}/photos', [PhotoboothController::class, 'addPhotos']);

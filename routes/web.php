@@ -67,12 +67,16 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/frames/{frame}/toggle-status', [PhotoFrameController::class, 'toggleStatus'])
         ->name('frames.toggle-status');
 
-    // Background untuk frame bawaan aplikasi Flutter.
+    // Perpustakaan gambar background (berlaku untuk semua frame di aplikasi Flutter).
     Route::get('/frame-backgrounds', [FrameBackgroundController::class, 'index'])->name('frame-backgrounds.index');
-    Route::post('/frame-backgrounds/{key}', [FrameBackgroundController::class, 'update'])->name('frame-backgrounds.update');
-    Route::get('/frame-backgrounds/{key}/edit', [FrameBackgroundController::class, 'edit'])->name('frame-backgrounds.edit');
-    Route::post('/frame-backgrounds/{key}/area', [FrameBackgroundController::class, 'saveArea'])->name('frame-backgrounds.area');
-    Route::delete('/frame-backgrounds/{key}', [FrameBackgroundController::class, 'destroy'])->name('frame-backgrounds.destroy');
+    Route::post('/frame-backgrounds', [FrameBackgroundController::class, 'store'])->name('frame-backgrounds.store');
+    Route::get('/frame-backgrounds/design/{background}/edit', [FrameBackgroundController::class, 'edit'])->name('frame-backgrounds.edit');
+    Route::post('/frame-backgrounds/design/{background}/area', [FrameBackgroundController::class, 'saveArea'])->name('frame-backgrounds.area');
+    Route::post('/frame-backgrounds/design/{background}/image', [FrameBackgroundController::class, 'replace'])->name('frame-backgrounds.replace');
+    Route::post('/frame-backgrounds/normalize', [FrameBackgroundController::class, 'normalize'])->name('frame-backgrounds.normalize');
+    Route::patch('/frame-backgrounds/design/{background}', [FrameBackgroundController::class, 'rename'])->name('frame-backgrounds.rename');
+    Route::patch('/frame-backgrounds/design/{background}/toggle', [FrameBackgroundController::class, 'toggle'])->name('frame-backgrounds.toggle');
+    Route::delete('/frame-backgrounds/design/{background}', [FrameBackgroundController::class, 'destroy'])->name('frame-backgrounds.destroy');
 
     Route::resource('packages', PhotoPackageController::class)->except(['show', 'create', 'edit']);
 

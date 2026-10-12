@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Area Foto - ' . $frame['name'])
+@section('title', 'Area Foto - ' . $background->name)
 
 @section('content')
   @php
@@ -10,7 +10,7 @@
 
   <div class="frame-shell">
     <div class="upload-panel">
-      <h2>Area foto &mdash; {{ $frame['name'] }}</h2>
+      <h2>Area foto &mdash; {{ $background->name }}</h2>
       <p>
         Geser kotak oranye ke bagian background yang boleh diisi foto, lalu tarik kotak hijau di sudut
         kanan-bawah untuk mengubah ukurannya. Logo, tulisan, dan hiasan di luar kotak tetap terlihat.
@@ -36,7 +36,7 @@
         </div>
       </div>
 
-      <form class="fa-panel" id="faForm" method="POST" action="{{ route('frame-backgrounds.area', $frame['key']) }}">
+      <form class="fa-panel" id="faForm" method="POST" action="{{ route('frame-backgrounds.area', $background) }}">
         @csrf
         <h4>Posisi &amp; ukuran (%)</h4>
         <label>Kiri (X) <input type="number" step="0.1" min="0" max="95" name="area_x" id="areaX"></label>

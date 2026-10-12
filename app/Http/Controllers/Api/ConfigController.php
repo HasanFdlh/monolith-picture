@@ -44,6 +44,14 @@ class ConfigController extends Controller
             // koneksi DB bermasalah akan terlihat di endpoint lain
         }
 
+        try {
+            if (Schema::hasTable('frame_backgrounds') && !Schema::hasColumn('frame_backgrounds', 'sort_order')) {
+                $warnings[] = 'Migrasi desain background belum dijalankan (1 frame = 1 desain). Jalankan: php artisan migrate';
+            }
+        } catch (Throwable) {
+            // sama seperti di atas
+        }
+
         if (in_array(config('mail.default'), ['log', 'array'], true)) {
             $warnings[] = 'MAIL_MAILER=' . config('mail.default') . ': email hasil foto tidak benar-benar terkirim.';
         }
