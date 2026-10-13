@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\SessionPrintMail;
 use App\Models\Media;
 use App\Models\PhotoFrame;
 use App\Models\Session;
+use App\Services\SessionPrintService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use ZipArchive;
 
 class PhotoboothController extends Controller
 {
@@ -132,29 +130,87 @@ class PhotoboothController extends Controller
         return response()->noContent();
     }
 
-    public function print(Request $request, Session $photoSession)
+    /**
+     * Jalankan printer dan/atau kirim email berisi semua foto + mock strip.
+     * - email  : opsional; bila ada, email dikirim.
+     * - print  : default true; false = jangan jalankan printer (hanya email).
+     * - mark_printed : default true; kiosk mengirim false karena sudah memanggil
+     *   /printed sendiri (supaya hitungan cetak tidak dobel).
+     */
+    public function print(Request $request, Session $photoSession, SessionPrintService $printer)
     {
-        $data = $request->validate(['email' => ['required', 'email']]);
+        $data = $request->validate([
+            'email' => ['nullable', 'email'],
+            'print' => ['sometimes', 'boolean'],
+            'mark_printed' => ['sometimes', 'boolean'],
+        ]);
+
+        $email = $data['email'] ?? null;
+        $print = (bool) ($data['print'] ?? true);
+        abort_if(!$email && !$print, 422, 'Isi email atau aktifkan print.');
+
         $photoSession->load('media');
         abort_if($photoSession->media->isEmpty(), 422, 'Session has no photos to print.');
 
-        $zipPath = $this->createZip($photoSession);
-        Mail::to($data['email'])->send(new SessionPrintMail($photoSession, $zipPath));
+        $result = $printer->dispatch($photoSession, $email, $print, (bool) ($data['mark_printed'] ?? true));
 
-        $printerCommand = config('photobooth.printer_command');
-        $printed = false;
-        if ($printerCommand) {
-            $command = str_replace('{file}', escapeshellarg($zipPath), $printerCommand);
-            exec($command, $output, $status);
-            $printed = $status === 0;
+        // Tidak ada satu pun yang berhasil: jangan balas 200.
+        $status = ($result['email_sent'] || $result['print_dispatched']) ? 200 : 502;
+
+        return response()->json($result, $status);
+    }
+
+    /**
+     * POST /photo-sessions/{id}/strip
+     * Kiosk mengunggah gambar mock strip (hasil akhir: frame + background +
+     * foto + filter). Disimpan sebagai media bertipe `strip`, menggantikan
+     * mock lama; tidak memakan jatah take.
+     */
+    public function uploadStrip(Request $request, Session $photoSession)
+    {
+        $request->validate(['strip' => ['required', 'file', 'image', 'max:20480']]);
+        $this->ensurePaid($photoSession);
+
+        $photoSession->media()->where('type', 'strip')->get()->each(fn (Media $m) => $this->deleteMedia($m));
+
+        $file = $request->file('strip');
+        $fileName = 'strip-' . Str::uuid() . '.' . $file->extension();
+        $path = $file->storeAs("sessions/{$photoSession->session_code}", $fileName, 'public');
+
+        $photoSession->media()->create([
+            'type' => 'strip',
+            'file_name' => $fileName,
+            'path' => 'storage/' . $path,
+            'size' => $file->getSize(),
+        ]);
+        $this->refreshTotals($photoSession);
+
+        return response()->json(['data' => $photoSession->fresh()->load('media')], 201);
+    }
+
+    /**
+     * Dipanggil kiosk saat pelanggan menekan tombol Cetak. Sesi (beserta
+     * fotonya) lalu muncul di menu "Hasil Print" pada dashboard.
+     */
+    public function markPrinted(Request $request, Session $photoSession)
+    {
+        $this->ensurePaid($photoSession);
+        abort_if(!$photoSession->media()->exists(), 422, 'Session has no photos to print.');
+
+        // Susunan akhir terbaru (frame/background/foto pilihan/filter).
+        $data = $request->validate(['composition' => ['sometimes', 'nullable', 'array']]);
+        if (!empty($data['composition'])) {
+            $photoSession->composition = $data['composition'];
+            if (array_key_exists('filter', $data['composition'])) {
+                $photoSession->filter = $data['composition']['filter'];
+            }
         }
 
-        $photoSession->update(['email' => $data['email']]);
+        $photoSession->markPrinted();
 
         return response()->json([
-            'message' => $printed ? 'Print job sent and email sent.' : 'Email sent. Configure PHOTOBOOTH_PRINTER_COMMAND to dispatch a print job.',
-            'email_sent' => true,
-            'print_dispatched' => $printed,
+            'message' => 'Session marked as printed.',
+            'data' => $photoSession->fresh()->load(['booth', 'photoFrame', 'media']),
         ]);
     }
 
@@ -175,6 +231,7 @@ class PhotoboothController extends Controller
             'photo_frame_id' => [$creating ? 'required' : 'sometimes', 'nullable', 'integer', 'exists:photo_frames,id'],
             'layout' => ['sometimes', 'nullable', 'string', 'max:100'],
             'filter' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'composition' => ['sometimes', 'nullable', 'array'],
             'taken_at' => ['sometimes', 'nullable', 'date'],
             'photos' => [$creating ? 'required' : 'sometimes', 'array', 'min:1', 'max:24'],
             'photos.*' => ['file', 'image', 'max:10240'],
@@ -202,7 +259,8 @@ class PhotoboothController extends Controller
     private function refreshTotals(Session $session): void
     {
         $session->update([
-            'total_files' => $session->media()->count(),
+            // Mock strip tidak dihitung sebagai foto (jatah take).
+            'total_files' => $session->media()->where('type', '!=', 'strip')->count(),
             'total_size' => $session->media()->sum('size'),
         ]);
     }
@@ -224,23 +282,5 @@ class PhotoboothController extends Controller
         $columns = collect($slots)->pluck('x')->map(fn ($value) => (string) $value)->unique()->count();
 
         return "{$columns}x{$rows}";
-    }
-
-    private function createZip(Session $session): string
-    {
-        $path = storage_path("app/temp/session-{$session->session_code}.zip");
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
-
-        $zip = new ZipArchive();
-        abort_unless($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true, 500, 'Cannot create print package.');
-        foreach ($session->media as $media) {
-            $storedPath = ltrim(preg_replace('#^/?storage/#', '', $media->path), '/');
-            if (Storage::disk('public')->exists($storedPath)) {
-                $zip->addFromString($media->file_name, Storage::disk('public')->get($storedPath));
-            }
-        }
-        $zip->close();
-
-        return $path;
     }
 }

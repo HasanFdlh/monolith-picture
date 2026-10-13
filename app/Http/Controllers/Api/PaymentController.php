@@ -74,11 +74,14 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Belum ada booth yang tersedia untuk sesi ini.'], 422);
         }
 
-        $payment = DB::transaction(function () use ($package, $boothId, $data) {
+        // Semua paket mendapat jumlah jepretan yang sama; paket hanya beda harga.
+        $shots = max(1, (int) config('photobooth.shots_per_session', 8));
+
+        $payment = DB::transaction(function () use ($package, $boothId, $data, $shots) {
             $session = Session::create([
                 'booth_id' => $boothId,
                 'photo_package_id' => $package->id,
-                'allowed_takes' => $package->takes,
+                'allowed_takes' => $shots,
                 'payment_status' => 'pending',
                 'session_code' => now()->format('YmdHis') . Str::upper(Str::random(4)),
                 'customer_name' => $data['customer_name'] ?? null,
@@ -92,7 +95,7 @@ class PaymentController extends Controller
                 'order_id' => 'PHB-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
                 'session_id' => $session->id,
                 'photo_package_id' => $package->id,
-                'takes' => $package->takes,
+                'takes' => $shots,
                 'amount' => $package->price,
                 'status' => 'pending',
                 'expires_at' => now()->addMinutes((int) config('services.midtrans.expiry_minutes', 5)),

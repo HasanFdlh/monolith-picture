@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Session;
+use App\Models\FrameBackground;
 use App\Models\Media;
+use App\Models\PhotoFrame;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SessionPrintMail;
+use App\Services\SessionPrintService;
 
 class SessionController extends Controller
 {
@@ -22,9 +24,69 @@ class SessionController extends Controller
             'session' => $session,
             'media' => $session->media,
             'booth' => $session->booth,
+            'result' => $this->resultPayload($session),
         ];
 
         return view('sessions.show', $data);
+    }
+
+    /**
+     * Data untuk menampilkan ulang HASIL AKHIR yang dipilih customer (frame +
+     * background + foto per slot + filter). Null bila kiosk belum mengirim
+     * susunan akhirnya, jadi halaman cukup menampilkan galeri biasa.
+     */
+    private function resultPayload(Session $session): ?array
+    {
+        $comp = $session->composition;
+        if (!is_array($comp) || (empty($comp['cells']) && empty($comp['template']))) {
+            return null;
+        }
+
+        $photos = $session->media
+            ->sortBy('id')
+            ->reject(fn ($m) => in_array($m->type, ['strip', 'gif', 'boomerang', 'video'], true))
+            ->map(fn ($m) => asset(ltrim($m->path, '/')))
+            ->values()
+            ->all();
+
+        if (empty($photos)) {
+            return null;
+        }
+
+        // Background: diambil dari perpustakaan dashboard (bukan URL yang
+        // tersimpan) supaya tetap tampil walau host/IP server berubah.
+        $background = null;
+        $bgId = $comp['background']['id'] ?? null;
+        if ($bgId && ($bg = FrameBackground::find($bgId)) && $bg->image_path) {
+            $background = [
+                'url' => route('api.frame-backgrounds.image', ['background' => $bg->id], false)
+                    . '?v=' . ($bg->updated_at?->timestamp ?? 0),
+                'aspect' => $bg->aspect() ?? (float) ($comp['background']['aspect'] ?? 2 / 3),
+                'area' => $bg->area,
+            ];
+        }
+
+        // Template dari server: slot dari aplikasi, PNG frame dari database.
+        $template = null;
+        if (!empty($comp['template']) && is_array($comp['template'])) {
+            $frame = !empty($comp['remote_frame_id']) ? PhotoFrame::find($comp['remote_frame_id']) : null;
+            $template = [
+                'canvas_w' => (float) ($comp['template']['canvas_w'] ?? 600),
+                'canvas_h' => (float) ($comp['template']['canvas_h'] ?? 1800),
+                'slots' => $comp['template']['slots'] ?? [],
+                'image_url' => $frame?->image_url,
+            ];
+        }
+
+        return [
+            'photos' => $photos,
+            'composition' => $comp,
+            'background' => $template ? null : $background,
+            'template' => $template,
+            // Filter yang tersimpan (null = Natural).
+            'filter' => array_key_exists('filter', $comp) ? ($comp['filter'] ?: 'none') : ($session->filter ?: 'none'),
+            'save_url' => route('sessions.update', $session->id),
+        ];
     }
 
     public function download($id)
@@ -158,6 +220,11 @@ class SessionController extends Controller
             'grid' => 'nullable|string',
         ]);
 
+        // Filter dipilih ulang dari halaman detail: samakan dengan susunan akhir.
+        if (array_key_exists('filter', $data) && is_array($session->composition)) {
+            $data['composition'] = array_merge($session->composition, ['filter' => $data['filter']]);
+        }
+
         $session->update($data);
 
         return response()->json(['session' => $session], 200);
@@ -179,7 +246,7 @@ class SessionController extends Controller
         return response()->json(['message' => 'Session deleted'], 200);
     }
 
-    public function print(Request $request, $id)
+    public function print(Request $request, $id, SessionPrintService $printer)
     {
         $request->validate([
             'email' => 'required|email',
@@ -187,42 +254,11 @@ class SessionController extends Controller
 
         $session = Session::with('media')->findOrFail($id);
 
-        $zipName = 'session-' . $session->session_code . '.zip';
-        $zipPath = storage_path('app/temp/' . $zipName);
+        $result = $printer->dispatch($session, $request->input('email'));
 
-        if (!is_dir(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
-
-        $zip = new \ZipArchive;
-
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-            foreach ($session->media as $media) {
-                $path = ltrim(preg_replace('#^/?storage/#', '', $media->path), '/');
-                if (Storage::disk('public')->exists($path)) {
-                    $zip->addFromString($media->file_name ?? basename($path), Storage::disk('public')->get($path));
-                }
-            }
-            $zip->close();
-        } else {
-            abort(500, 'Could not create the session print package.');
-        }
-
-        // send email with attachment
-        try {
-            Mail::to($request->input('email'))->send(new SessionPrintMail($session, $zipPath));
-        } catch (\Exception $e) {
-            // continue but report error
-            return response()->json(['error' => 'Failed to send email: ' . $e->getMessage()], 500);
-        }
-
-        // optional auto-print: run a configured command replacing {file}
-        $printerCmd = config('photobooth.printer_command');
-        if ($printerCmd) {
-            $cmd = str_replace('{file}', escapeshellarg($zipPath), $printerCmd);
-            @exec($cmd . ' > /dev/null 2>&1 &');
-        }
-
-        return response()->json(['message' => 'Print job started and email sent'], 200);
+        return response()->json(
+            $result,
+            ($result['email_sent'] || $result['print_dispatched']) ? 200 : 502
+        );
     }
 }
