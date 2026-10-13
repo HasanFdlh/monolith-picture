@@ -17,6 +17,17 @@
         </li>
 
         <li>
+            <a href="{{ route('printed.index') }}" class="{{ request()->routeIs('printed.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-print"></i>
+                Hasil Print
+                @php($printedCount = \App\Models\Session::printed()->count())
+                @if ($printedCount > 0)
+                    <span class="badge bg-warning text-dark ms-auto">{{ $printedCount > 99 ? '99+' : $printedCount }}</span>
+                @endif
+            </a>
+        </li>
+
+        <li>
             <a href="{{ route('branding') }}" class="{{ request()->routeIs('branding') ? 'active' : '' }}">
                 <i class="fa-solid fa-palette"></i>
                 Branding

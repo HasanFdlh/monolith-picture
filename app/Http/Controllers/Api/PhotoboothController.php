@@ -130,18 +130,88 @@ class PhotoboothController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * Jalankan printer dan/atau kirim email berisi semua foto + mock strip.
+     * - email  : opsional; bila ada, email dikirim.
+     * - print  : default true; false = jangan jalankan printer (hanya email).
+     * - mark_printed : default true; kiosk mengirim false karena sudah memanggil
+     *   /printed sendiri (supaya hitungan cetak tidak dobel).
+     */
     public function print(Request $request, Session $photoSession, SessionPrintService $printer)
     {
-        $data = $request->validate(['email' => ['required', 'email']]);
+        $data = $request->validate([
+            'email' => ['nullable', 'email'],
+            'print' => ['sometimes', 'boolean'],
+            'mark_printed' => ['sometimes', 'boolean'],
+        ]);
+
+        $email = $data['email'] ?? null;
+        $print = (bool) ($data['print'] ?? true);
+        abort_if(!$email && !$print, 422, 'Isi email atau aktifkan print.');
+
         $photoSession->load('media');
         abort_if($photoSession->media->isEmpty(), 422, 'Session has no photos to print.');
 
-        $result = $printer->dispatch($photoSession, $data['email']);
+        $result = $printer->dispatch($photoSession, $email, $print, (bool) ($data['mark_printed'] ?? true));
 
-        // Tidak ada satu pun yang berhasil (email gagal DAN printer gagal): jangan balas 200.
+        // Tidak ada satu pun yang berhasil: jangan balas 200.
         $status = ($result['email_sent'] || $result['print_dispatched']) ? 200 : 502;
 
         return response()->json($result, $status);
+    }
+
+    /**
+     * POST /photo-sessions/{id}/strip
+     * Kiosk mengunggah gambar mock strip (hasil akhir: frame + background +
+     * foto + filter). Disimpan sebagai media bertipe `strip`, menggantikan
+     * mock lama; tidak memakan jatah take.
+     */
+    public function uploadStrip(Request $request, Session $photoSession)
+    {
+        $request->validate(['strip' => ['required', 'file', 'image', 'max:20480']]);
+        $this->ensurePaid($photoSession);
+
+        $photoSession->media()->where('type', 'strip')->get()->each(fn (Media $m) => $this->deleteMedia($m));
+
+        $file = $request->file('strip');
+        $fileName = 'strip-' . Str::uuid() . '.' . $file->extension();
+        $path = $file->storeAs("sessions/{$photoSession->session_code}", $fileName, 'public');
+
+        $photoSession->media()->create([
+            'type' => 'strip',
+            'file_name' => $fileName,
+            'path' => 'storage/' . $path,
+            'size' => $file->getSize(),
+        ]);
+        $this->refreshTotals($photoSession);
+
+        return response()->json(['data' => $photoSession->fresh()->load('media')], 201);
+    }
+
+    /**
+     * Dipanggil kiosk saat pelanggan menekan tombol Cetak. Sesi (beserta
+     * fotonya) lalu muncul di menu "Hasil Print" pada dashboard.
+     */
+    public function markPrinted(Request $request, Session $photoSession)
+    {
+        $this->ensurePaid($photoSession);
+        abort_if(!$photoSession->media()->exists(), 422, 'Session has no photos to print.');
+
+        // Susunan akhir terbaru (frame/background/foto pilihan/filter).
+        $data = $request->validate(['composition' => ['sometimes', 'nullable', 'array']]);
+        if (!empty($data['composition'])) {
+            $photoSession->composition = $data['composition'];
+            if (array_key_exists('filter', $data['composition'])) {
+                $photoSession->filter = $data['composition']['filter'];
+            }
+        }
+
+        $photoSession->markPrinted();
+
+        return response()->json([
+            'message' => 'Session marked as printed.',
+            'data' => $photoSession->fresh()->load(['booth', 'photoFrame', 'media']),
+        ]);
     }
 
     private function ensurePaid(Session $session): void
@@ -161,6 +231,7 @@ class PhotoboothController extends Controller
             'photo_frame_id' => [$creating ? 'required' : 'sometimes', 'nullable', 'integer', 'exists:photo_frames,id'],
             'layout' => ['sometimes', 'nullable', 'string', 'max:100'],
             'filter' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'composition' => ['sometimes', 'nullable', 'array'],
             'taken_at' => ['sometimes', 'nullable', 'date'],
             'photos' => [$creating ? 'required' : 'sometimes', 'array', 'min:1', 'max:24'],
             'photos.*' => ['file', 'image', 'max:10240'],
@@ -188,7 +259,8 @@ class PhotoboothController extends Controller
     private function refreshTotals(Session $session): void
     {
         $session->update([
-            'total_files' => $session->media()->count(),
+            // Mock strip tidak dihitung sebagai foto (jatah take).
+            'total_files' => $session->media()->where('type', '!=', 'strip')->count(),
             'total_size' => $session->media()->sum('size'),
         ]);
     }

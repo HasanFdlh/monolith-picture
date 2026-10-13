@@ -16,11 +16,14 @@ class Session extends Model
         'allowed_takes',
         'payment_status',
         'paid_at',
+        'printed_at',
+        'print_count',
         'session_code',
         'customer_name',
         'layout',
         'grid',
         'filter',
+        'composition',
         'email',
         'total_files',
         'total_size',
@@ -30,7 +33,10 @@ class Session extends Model
     protected $casts = [
         'taken_at' => 'datetime',
         'paid_at' => 'datetime',
+        'printed_at' => 'datetime',
+        'print_count' => 'integer',
         'allowed_takes' => 'integer',
+        'composition' => 'array',
     ];
 
     public function booth()
@@ -66,6 +72,46 @@ class Session extends Model
     public function latestPayment()
     {
         return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
+    /**
+     * Catat bahwa sesi ini dicetak (dipakai halaman "Hasil Print" di dashboard).
+     */
+    public function markPrinted(): void
+    {
+        $this->forceFill([
+            'printed_at' => now(),
+            'print_count' => (int) $this->print_count + 1,
+        ])->save();
+    }
+
+    /**
+     * Keluarkan sesi dari daftar "Hasil Print" tanpa menghapus sesi/fotonya.
+     */
+    public function unmarkPrinted(): void
+    {
+        $this->forceFill(['printed_at' => null, 'print_count' => 0])->save();
+    }
+
+    /**
+     * Hapus sesi PERMANEN beserta file foto di storage (media, share ikut
+     * terhapus; pembayaran tetap ada dengan session_id dikosongkan).
+     */
+    public function deleteWithMedia(): void
+    {
+        foreach ($this->media as $media) {
+            $path = ltrim(preg_replace('#^/?storage/#', '', (string) $media->path), '/');
+            if ($path !== '' && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+        }
+
+        $this->delete();
+    }
+
+    public function scopePrinted($query)
+    {
+        return $query->whereNotNull('printed_at');
     }
 
     public function isPaid(): bool

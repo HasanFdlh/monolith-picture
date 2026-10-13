@@ -23,6 +23,11 @@ class SessionPrintService
     private const FAKE_MAILERS = ['log', 'array'];
 
     /**
+     * @param string|null $email        null = tidak kirim email.
+     * @param bool        $print        false = tidak menjalankan perintah printer.
+     * @param bool        $markPrinted  false = jangan catat sebagai "dicetak"
+     *                                  (kiosk sudah mencatatnya sendiri).
+     *
      * @return array{
      *   email_sent: bool,
      *   print_dispatched: bool,
@@ -31,20 +36,33 @@ class SessionPrintService
      *   message: string
      * }
      */
-    public function dispatch(Session $session, string $email): array
+    public function dispatch(Session $session, ?string $email, bool $print = true, bool $markPrinted = true): array
     {
         $session->loadMissing('media');
         $zipPath = $this->createZip($session);
 
+        $emailSent = false;
+        $emailError = null;
+        $printed = false;
+        $printError = null;
+
         try {
-            [$emailSent, $emailError] = $this->sendEmail($session, $email, $zipPath);
-            [$printed, $printError] = $this->runPrinter($zipPath);
+            if ($email) {
+                [$emailSent, $emailError] = $this->sendEmail($session, $email, $zipPath);
+            }
+            if ($print) {
+                [$printed, $printError] = $this->runPrinter($zipPath, $this->printTarget($session));
+            }
         } finally {
             @unlink($zipPath);
         }
 
         if ($emailSent) {
             $session->update(['email' => $email]);
+        }
+
+        if ($printed && $markPrinted) {
+            $session->markPrinted();
         }
 
         return [
@@ -56,6 +74,38 @@ class SessionPrintService
         ];
     }
 
+    /** Path lokal gambar mock strip (hasil akhir) sesi ini, bila ada. */
+    public function stripFile(Session $session): ?string
+    {
+        $strip = $session->media->where('type', 'strip')->sortByDesc('id')->first();
+
+        return $strip ? $this->localPath($strip->path) : null;
+    }
+
+    /**
+     * File yang dikirim ke printer lewat placeholder {strip}: mock strip,
+     * atau foto pertama bila mock belum ada.
+     */
+    private function printTarget(Session $session): ?string
+    {
+        if ($path = $this->stripFile($session)) {
+            return $path;
+        }
+
+        $first = $session->media->where('type', 'photo')->sortBy('id')->first();
+
+        return $first ? $this->localPath($first->path) : null;
+    }
+
+    private function localPath(?string $mediaPath): ?string
+    {
+        $rel = ltrim(preg_replace('#^/?storage/#', '', (string) $mediaPath), '/');
+
+        return $rel !== '' && Storage::disk('public')->exists($rel)
+            ? Storage::disk('public')->path($rel)
+            : null;
+    }
+
     private function sendEmail(Session $session, string $email, string $zipPath): array
     {
         $mailer = (string) config('mail.default');
@@ -65,7 +115,7 @@ class SessionPrintService
         }
 
         try {
-            Mail::to($email)->send(new SessionPrintMail($session, $zipPath));
+            Mail::to($email)->send(new SessionPrintMail($session, $zipPath, $this->stripFile($session)));
 
             return [true, null];
         } catch (Throwable $e) {
@@ -75,7 +125,7 @@ class SessionPrintService
         }
     }
 
-    private function runPrinter(string $zipPath): array
+    private function runPrinter(string $zipPath, ?string $target = null): array
     {
         $template = config('photobooth.printer_command');
 
@@ -83,7 +133,12 @@ class SessionPrintService
             return [false, 'Printer belum dikonfigurasi (PHOTOBOOTH_PRINTER_COMMAND kosong).'];
         }
 
-        $command = str_replace('{file}', escapeshellarg($zipPath), $template);
+        // {file} = ZIP semua foto, {strip} = gambar mock strip (atau foto pertama).
+        $command = str_replace(
+            ['{file}', '{strip}'],
+            [escapeshellarg($zipPath), escapeshellarg($target ?? $zipPath)],
+            $template
+        );
 
         try {
             exec($command, $output, $status);
@@ -103,14 +158,12 @@ class SessionPrintService
         if ($emailSent && $printed) {
             return 'Email terkirim dan perintah print dijalankan.';
         }
-        if ($emailSent) {
-            return 'Email terkirim. ' . $printError;
-        }
-        if ($printed) {
-            return 'Perintah print dijalankan. ' . $emailError;
-        }
 
-        return trim($emailError . ' ' . $printError);
+        $parts = [];
+        $parts[] = $emailSent ? 'Email terkirim.' : $emailError;
+        $parts[] = $printed ? 'Perintah print dijalankan.' : $printError;
+
+        return trim(implode(' ', array_filter($parts)));
     }
 
     private function createZip(Session $session): string

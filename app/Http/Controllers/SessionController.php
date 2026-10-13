@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Session;
+use App\Models\FrameBackground;
 use App\Models\Media;
+use App\Models\PhotoFrame;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -22,9 +24,69 @@ class SessionController extends Controller
             'session' => $session,
             'media' => $session->media,
             'booth' => $session->booth,
+            'result' => $this->resultPayload($session),
         ];
 
         return view('sessions.show', $data);
+    }
+
+    /**
+     * Data untuk menampilkan ulang HASIL AKHIR yang dipilih customer (frame +
+     * background + foto per slot + filter). Null bila kiosk belum mengirim
+     * susunan akhirnya, jadi halaman cukup menampilkan galeri biasa.
+     */
+    private function resultPayload(Session $session): ?array
+    {
+        $comp = $session->composition;
+        if (!is_array($comp) || (empty($comp['cells']) && empty($comp['template']))) {
+            return null;
+        }
+
+        $photos = $session->media
+            ->sortBy('id')
+            ->reject(fn ($m) => in_array($m->type, ['strip', 'gif', 'boomerang', 'video'], true))
+            ->map(fn ($m) => asset(ltrim($m->path, '/')))
+            ->values()
+            ->all();
+
+        if (empty($photos)) {
+            return null;
+        }
+
+        // Background: diambil dari perpustakaan dashboard (bukan URL yang
+        // tersimpan) supaya tetap tampil walau host/IP server berubah.
+        $background = null;
+        $bgId = $comp['background']['id'] ?? null;
+        if ($bgId && ($bg = FrameBackground::find($bgId)) && $bg->image_path) {
+            $background = [
+                'url' => route('api.frame-backgrounds.image', ['background' => $bg->id], false)
+                    . '?v=' . ($bg->updated_at?->timestamp ?? 0),
+                'aspect' => $bg->aspect() ?? (float) ($comp['background']['aspect'] ?? 2 / 3),
+                'area' => $bg->area,
+            ];
+        }
+
+        // Template dari server: slot dari aplikasi, PNG frame dari database.
+        $template = null;
+        if (!empty($comp['template']) && is_array($comp['template'])) {
+            $frame = !empty($comp['remote_frame_id']) ? PhotoFrame::find($comp['remote_frame_id']) : null;
+            $template = [
+                'canvas_w' => (float) ($comp['template']['canvas_w'] ?? 600),
+                'canvas_h' => (float) ($comp['template']['canvas_h'] ?? 1800),
+                'slots' => $comp['template']['slots'] ?? [],
+                'image_url' => $frame?->image_url,
+            ];
+        }
+
+        return [
+            'photos' => $photos,
+            'composition' => $comp,
+            'background' => $template ? null : $background,
+            'template' => $template,
+            // Filter yang tersimpan (null = Natural).
+            'filter' => array_key_exists('filter', $comp) ? ($comp['filter'] ?: 'none') : ($session->filter ?: 'none'),
+            'save_url' => route('sessions.update', $session->id),
+        ];
     }
 
     public function download($id)
@@ -157,6 +219,11 @@ class SessionController extends Controller
             'frame_id' => 'nullable|integer|exists:photo_frames,id',
             'grid' => 'nullable|string',
         ]);
+
+        // Filter dipilih ulang dari halaman detail: samakan dengan susunan akhir.
+        if (array_key_exists('filter', $data) && is_array($session->composition)) {
+            $data['composition'] = array_merge($session->composition, ['filter' => $data['filter']]);
+        }
 
         $session->update($data);
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\FrameBackgroundController;
 use App\Http\Controllers\MidtransCallbackController;
 use App\Http\Controllers\PhotoFrameController;
 use App\Http\Controllers\PhotoPackageController;
+use App\Http\Controllers\PrintedSessionController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PhotoboothTestController;
@@ -52,6 +53,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/printed-sessions', [PrintedSessionController::class, 'index'])->name('printed.index');
+    Route::post('/printed-sessions/bulk', [PrintedSessionController::class, 'bulk'])->name('printed.bulk');
+    Route::post('/printed-sessions/{session}/unmark', [PrintedSessionController::class, 'unmark'])->name('printed.unmark');
+    Route::delete('/printed-sessions/{session}', [PrintedSessionController::class, 'destroy'])->name('printed.destroy');
     Route::get('/photobooth-test', [PhotoboothTestController::class, 'index'])->name('photobooth-test');
 
     Route::get('/branding', [BrandingController::class, 'index'])->name('branding');

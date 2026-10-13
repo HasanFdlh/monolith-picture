@@ -2,7 +2,9 @@
 
 return [
     // Example (Windows): powershell -Command "Start-Process -FilePath '{file}' -Verb Print"
-    // The {file} placeholder is replaced with the generated ZIP file.
+    // {file} = ZIP berisi semua foto. {strip} = gambar mock strip hasil akhir
+    // (PNG; foto pertama bila mock belum ada) - pakai {strip} untuk mencetak.
+    // Example: powershell -Command "Start-Process -FilePath '{strip}' -Verb Print"
     'printer_command' => env('PHOTOBOOTH_PRINTER_COMMAND'),
 
     // Kalau true, API tidak mau membuat/mengisi/mengubah sesi foto sebelum

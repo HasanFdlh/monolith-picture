@@ -13,10 +13,14 @@ class SessionPrintMail extends Mailable
     public $session;
     public $zipPath;
 
-    public function __construct($session, $zipPath)
+    /** Path lokal gambar mock strip (ditampilkan langsung di isi email). */
+    public $stripPath;
+
+    public function __construct($session, $zipPath, $stripPath = null)
     {
         $this->session = $session;
         $this->zipPath = $zipPath;
+        $this->stripPath = $stripPath;
     }
 
     public function build()
@@ -25,7 +29,7 @@ class SessionPrintMail extends Mailable
 
         return $this->subject('Your Photobooth Session: ' . ($this->session->session_code ?? ''))
             ->view('emails.session_print')
-            ->with(['session' => $this->session])
+            ->with(['session' => $this->session, 'stripPath' => $this->stripPath])
             ->attach($this->zipPath, [
                 'as' => $fileName,
                 'mime' => 'application/zip',

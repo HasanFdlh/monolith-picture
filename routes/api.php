@@ -21,6 +21,8 @@ Route::apiResource('photo-sessions', PhotoboothController::class)
 Route::post('/photo-sessions/{photoSession}/photos', [PhotoboothController::class, 'addPhotos']);
 Route::delete('/photo-sessions/{photoSession}/photos/{media}', [PhotoboothController::class, 'deletePhoto']);
 Route::post('/photo-sessions/{photoSession}/print', [PhotoboothController::class, 'print']);
+Route::post('/photo-sessions/{photoSession}/strip', [PhotoboothController::class, 'uploadStrip']);
+Route::post('/photo-sessions/{photoSession}/printed', [PhotoboothController::class, 'markPrinted']);
 
 // Pembayaran (kiosk Flutter): pilih paket -> QR Midtrans -> polling sampai paid.
 Route::get('/packages', [PaymentController::class, 'packages']);
